@@ -1,0 +1,139 @@
+import React, { useState } from 'react';
+import './App.css';
+import FileUpload from './components/FileUpload';
+import PlayerConfig from './components/PlayerConfig';
+import ArrangementDisplay from './components/ArrangementDisplay';
+
+function App() {
+  const [file, setFile] = useState(null);
+  const [players, setPlayers] = useState([
+    { id: 1, name: 'Player 1', experience: 'experienced', bells: [] },
+    { id: 2, name: 'Player 2', experience: 'intermediate', bells: [] },
+    { id: 3, name: 'Player 3', experience: 'beginner', bells: [] }
+  ]);
+  const [arrangements, setArrangements] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleFileUpload = async (uploadedFile) => {
+    setFile(uploadedFile);
+    setError(null);
+  };
+
+  const handlePlayerConfigChange = (updatedPlayers) => {
+    setPlayers(updatedPlayers);
+    setError(null);
+  };
+
+  const generateArrangements = async () => {
+    if (!file) {
+      setError('Please upload a music file first');
+      return;
+    }
+
+    if (players.length === 0) {
+      setError('Please add at least one player');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('players', JSON.stringify(players));
+
+      const response = await fetch('http://localhost:5000/api/generate-arrangements', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setArrangements(data.arrangements);
+      } else {
+        // Handle specific error codes
+        const errorMessage = getErrorMessage(data.code, data.error);
+        setError(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Network error: Unable to reach the server. Make sure the backend is running on http://localhost:5000');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getErrorMessage = (code, fallback) => {
+    const errorMap = {
+      'ERR_NO_FILE': 'No music file provided',
+      'ERR_NO_FILE_SELECTED': 'Please select a music file',
+      'ERR_INVALID_JSON': 'Invalid player configuration',
+      'ERR_NO_PLAYERS': 'No players configured',
+      'ERR_TOO_FEW_PLAYERS': 'At least one player is required',
+      'ERR_TOO_MANY_PLAYERS': 'Too many players (max 20)',
+      'ERR_PLAYER_NO_NAME': 'All players must have names',
+      'ERR_FILE_SAVE': 'Failed to save file',
+      'ERR_MUSIC_PARSE': `Failed to parse music file: ${fallback}`,
+      'ERR_VALIDATION': fallback,
+      'ERR_GENERATION_FAILED': 'Failed to generate arrangements',
+      'ERR_NOT_FOUND': 'API endpoint not found',
+      'ERR_INTERNAL': 'Server error'
+    };
+    
+    return errorMap[code] || fallback || 'An error occurred';
+  };
+
+  return (
+    <div className="App">
+      <header className="App-header">
+        <h1>Handbell Arrangement Generator</h1>
+        <p>Upload a song and configure your players to generate bell arrangements</p>
+      </header>
+
+      <main className="App-main">
+        <div className="container">
+          {error && (
+            <div className="error-message">
+              <span>{error}</span>
+              <button className="close-btn" onClick={() => setError(null)}>✕</button>
+            </div>
+          )}
+
+          <section className="section">
+            <h2>1. Upload Music File</h2>
+            <FileUpload onFileUpload={handleFileUpload} />
+            {file && <p className="file-name">Selected: {file.name}</p>}
+          </section>
+
+          <section className="section">
+            <h2>2. Configure Players</h2>
+            <PlayerConfig players={players} onChange={handlePlayerConfigChange} />
+          </section>
+
+          <section className="section">
+            <button 
+              className="generate-btn" 
+              onClick={generateArrangements}
+              disabled={loading || !file}
+            >
+              {loading ? 'Generating...' : 'Generate Arrangements'}
+            </button>
+          </section>
+
+          {arrangements && (
+            <section className="section">
+              <h2>3. Arrangements</h2>
+              <ArrangementDisplay arrangements={arrangements} />
+            </section>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export default App;
+
