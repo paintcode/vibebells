@@ -83,18 +83,24 @@ def generate_arrangements():
             return jsonify({
                 'success': True,
                 'arrangements': arrangements,
-                'note_count': music_data['note_count']
+                'note_count': music_data['note_count'],
+                'melody_count': len(music_data.get('melody_pitches', [])),
+                'harmony_count': len(music_data.get('harmony_pitches', [])),
+                'best_arrangement': arrangements[0] if arrangements else None
             }), 200
         
-        except FileHandler as e:
-            raise APIError(str(e), 'ERR_FILE_SAVE', 400)
-        except MusicParser as e:
-            raise APIError(str(e), 'ERR_MUSIC_PARSE', 400)
         except ValueError as e:
             raise APIError(str(e), 'ERR_VALIDATION', 400)
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-            raise APIError('Failed to generate arrangements', 'ERR_GENERATION_FAILED', 500)
+            # Provide context about what failed
+            error_msg = str(e)
+            if 'MIDI' in error_msg or 'midi' in error_msg:
+                raise APIError(error_msg, 'ERR_MUSIC_PARSE', 400)
+            elif 'file' in error_msg.lower():
+                raise APIError(error_msg, 'ERR_FILE_SAVE', 400)
+            else:
+                raise APIError('Failed to generate arrangements', 'ERR_GENERATION_FAILED', 500)
         
         finally:
             # Clean up uploaded file
