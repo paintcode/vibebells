@@ -1,0 +1,7 @@
+Flask==2.3.3
+Flask-CORS==4.0.0
+python-dotenv==1.0.0
+music21==9.3.0
+python-midi==0.2.8
+numpy==1.24.3
+werkzeug==2.3.7
