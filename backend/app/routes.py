@@ -28,6 +28,7 @@ def health():
 @api_bp.route('/generate-arrangements', methods=['POST'])
 def generate_arrangements():
     """Generate bell arrangements from music file and player config"""
+    filepath = None
     try:
         # Validate file presence
         if 'file' not in request.files:
@@ -64,48 +65,46 @@ def generate_arrangements():
             if 'name' not in player or not player['name']:
                 raise APIError('Each player must have a name', 'ERR_PLAYER_NO_NAME', 400)
         
-        filepath = None
-        try:
-            # Save uploaded file with UUID
-            filepath = FileHandler.save_file(file, current_app.config['UPLOAD_FOLDER'])
-            logger.info(f"File saved: {filepath}")
-            
-            # Parse music file
-            music_parser = MusicParser()
-            music_data = music_parser.parse(filepath)
-            logger.info(f"Parsed music: {music_data['note_count']} unique notes")
-            
-            # Generate arrangements
-            arrangement_gen = ArrangementGenerator()
-            arrangements = arrangement_gen.generate(music_data, players)
-            logger.info(f"Generated {len(arrangements)} arrangements")
-            
-            return jsonify({
-                'success': True,
-                'arrangements': arrangements,
-                'note_count': music_data['note_count'],
-                'melody_count': len(music_data.get('melody_pitches', [])),
-                'harmony_count': len(music_data.get('harmony_pitches', [])),
-                'best_arrangement': arrangements[0] if arrangements else None
-            }), 200
+        # Save uploaded file with UUID
+        filepath = FileHandler.save_file(file, current_app.config['UPLOAD_FOLDER'])
+        logger.info(f"File saved: {filepath}")
         
-        except ValueError as e:
-            raise APIError(str(e), 'ERR_VALIDATION', 400)
-        except Exception as e:
-            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-            # Provide context about what failed
-            error_msg = str(e)
-            if 'MIDI' in error_msg or 'midi' in error_msg:
-                raise APIError(error_msg, 'ERR_MUSIC_PARSE', 400)
-            elif 'file' in error_msg.lower():
-                raise APIError(error_msg, 'ERR_FILE_SAVE', 400)
-            else:
-                raise APIError('Failed to generate arrangements', 'ERR_GENERATION_FAILED', 500)
+        # Parse music file
+        music_parser = MusicParser()
+        music_data = music_parser.parse(filepath)
+        logger.info(f"Parsed music: {music_data['note_count']} unique notes")
         
-        finally:
-            # Clean up uploaded file
-            if filepath:
-                FileHandler.delete_file(filepath)
+        # Generate arrangements
+        arrangement_gen = ArrangementGenerator()
+        arrangements = arrangement_gen.generate(music_data, players)
+        logger.info(f"Generated {len(arrangements)} arrangements")
+        
+        return jsonify({
+            'success': True,
+            'arrangements': arrangements,
+            'note_count': music_data['note_count'],
+            'melody_count': len(music_data.get('melody_pitches', [])),
+            'harmony_count': len(music_data.get('harmony_pitches', [])),
+            'best_arrangement': arrangements[0] if arrangements else None
+        }), 200
+    
+    except ValueError as e:
+        raise APIError(str(e), 'ERR_VALIDATION', 400)
+    except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        # Provide context about what failed
+        error_msg = str(e)
+        if 'MIDI' in error_msg or 'midi' in error_msg:
+            raise APIError(error_msg, 'ERR_MUSIC_PARSE', 400)
+        elif 'file' in error_msg.lower():
+            raise APIError(error_msg, 'ERR_FILE_SAVE', 400)
+        else:
+            raise APIError('Failed to generate arrangements', 'ERR_GENERATION_FAILED', 500)
+    
+    finally:
+        # Clean up uploaded file
+        if filepath:
+            FileHandler.delete_file(filepath)
 
 @api_bp.errorhandler(APIError)
 def handle_api_error(error):
