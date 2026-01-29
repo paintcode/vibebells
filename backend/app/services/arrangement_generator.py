@@ -8,7 +8,7 @@ class ArrangementGenerator:
         """Generate multiple arrangement options
         
         Args:
-            music_data: Dict with parsed music info
+            music_data: Dict with parsed music info including melody/harmony
             players: List of player dicts with 'name' and 'experience'
             
         Returns:
@@ -30,6 +30,11 @@ class ArrangementGenerator:
         # Convert MIDI pitches to note names
         unique_notes = [MusicParser.pitch_to_note_name(p) for p in music_data['unique_notes']]
         
+        # Prioritize melody notes if available
+        melody_notes = []
+        if music_data.get('melody_pitches'):
+            melody_notes = [MusicParser.pitch_to_note_name(p) for p in music_data['melody_pitches']]
+        
         # Generate multiple arrangements with different strategies
         arrangements = []
         strategies = ['experienced_first', 'balanced', 'min_transitions']
@@ -39,7 +44,8 @@ class ArrangementGenerator:
                 assignment = BellAssignmentAlgorithm.assign_bells(
                     unique_notes, 
                     players, 
-                    strategy=strategy
+                    strategy=strategy,
+                    priority_notes=melody_notes
                 )
                 arrangements.append({
                     'strategy': strategy,
@@ -54,4 +60,5 @@ class ArrangementGenerator:
             raise Exception("Failed to generate any arrangements")
         
         return arrangements
+
 

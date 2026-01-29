@@ -1,12 +1,18 @@
-import midi
-from music21 import converter
+"""
+Main Music Parser
+Routes parsing to appropriate format-specific parsers.
+"""
+
 from app.services.file_handler import FileHandler
+from app.services.midi_parser import MIDIParser
+from app.services.musicxml_parser import MusicXMLParser
+from app.services.melody_harmony_extractor import MelodyHarmonyExtractor
 
 class MusicParser:
     """Parse MIDI and MusicXML files to extract notes and structure"""
     
     def parse(self, filepath):
-        """Parse music file and extract melody and harmony"""
+        """Parse music file and extract notes with melody/harmony separation"""
         try:
             file_type = FileHandler.get_file_type(filepath)
         except ValueError as e:
@@ -20,58 +26,52 @@ class MusicParser:
             raise ValueError(f"Unknown file type: {file_type}")
     
     def _parse_midi(self, filepath):
-        """Parse MIDI file"""
+        """Parse MIDI file and extract notes"""
         try:
-            pattern = midi.read_midifile(filepath)
+            data = MIDIParser.parse(filepath)
             
-            notes = []
-            for track in pattern:
-                for event in track:
-                    if isinstance(event, midi.NoteOnEvent) and event.velocity > 0:
-                        notes.append({
-                            'pitch': event.pitch,
-                            'velocity': event.velocity,
-                            'time': event.tick
-                        })
+            # Extract melody and harmony
+            melody_harmony = MelodyHarmonyExtractor.extract(data['notes'])
             
-            if not notes:
-                raise ValueError("No notes found in MIDI file")
-            
-            unique_pitches = list(set([n['pitch'] for n in notes]))
+            # Get frequencies
+            frequencies = MelodyHarmonyExtractor.get_note_frequencies(data['notes'])
             
             return {
-                'notes': notes,
-                'unique_notes': unique_pitches,
-                'note_count': len(unique_pitches),
-                'format': 'midi'
+                'notes': data['notes'],
+                'unique_notes': data['unique_notes'],
+                'note_count': data['note_count'],
+                'total_note_events': data['total_note_events'],
+                'melody_pitches': melody_harmony['melody_pitches'],
+                'harmony_pitches': melody_harmony['harmony_pitches'],
+                'frequencies': frequencies,
+                'format': 'midi',
+                'tempo': data.get('tempo', 120)
             }
         except Exception as e:
             raise Exception(f"Error parsing MIDI file: {str(e)}")
     
     def _parse_musicxml(self, filepath):
-        """Parse MusicXML file"""
+        """Parse MusicXML file and extract notes"""
         try:
-            score = converter.parse(filepath)
+            data = MusicXMLParser.parse(filepath)
             
-            notes = []
-            for element in score.flatten().notes:
-                if hasattr(element, 'pitch'):
-                    notes.append({
-                        'pitch': element.pitch.midi,
-                        'duration': element.duration.quarterLength,
-                        'offset': element.offset
-                    })
+            # Extract melody and harmony
+            melody_harmony = MelodyHarmonyExtractor.extract(data['notes'])
             
-            if not notes:
-                raise ValueError("No notes found in MusicXML file")
-            
-            unique_pitches = list(set([n['pitch'] for n in notes]))
+            # Get frequencies
+            frequencies = MelodyHarmonyExtractor.get_note_frequencies(data['notes'])
             
             return {
-                'notes': notes,
-                'unique_notes': unique_pitches,
-                'note_count': len(unique_pitches),
-                'format': 'musicxml'
+                'notes': data['notes'],
+                'unique_notes': data['unique_notes'],
+                'note_count': data['note_count'],
+                'total_note_events': data['total_note_events'],
+                'melody_pitches': melody_harmony['melody_pitches'],
+                'harmony_pitches': melody_harmony['harmony_pitches'],
+                'frequencies': frequencies,
+                'chords': data.get('chords', []),
+                'format': 'musicxml',
+                'tempo': data.get('tempo', 120)
             }
         except Exception as e:
             raise Exception(f"Error parsing MusicXML file: {str(e)}")
@@ -83,4 +83,5 @@ class MusicParser:
         octave = (pitch // 12) - 1
         note = note_names[pitch % 12]
         return f"{note}{octave}"
+
 
