@@ -64,7 +64,8 @@ class ArrangementGenerator:
                     players, 
                     strategy=strategy,
                     priority_notes=melody_notes,
-                    config=config
+                    config=config,
+                    note_timings=music_data.get('notes')  # Pass note timing data
                 )
                 
                 # Resolve any conflicts

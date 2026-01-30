@@ -83,5 +83,39 @@ class MusicParser:
         octave = (pitch // 12) - 1
         note = note_names[pitch % 12]
         return f"{note}{octave}"
+    
+    @staticmethod
+    def note_name_to_pitch(note_name):
+        """Convert note name to MIDI pitch number"""
+        note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+        
+        # Parse note name (e.g., "C4", "C#5", "Db3")
+        # Handle both sharp (#) and flat (b) notation
+        if len(note_name) < 2:
+            raise ValueError(f"Invalid note name: {note_name}")
+        
+        # Find where octave number starts
+        note_part = note_name[:-1]
+        octave = int(note_name[-1])
+        
+        # Normalize note (handle flats as sharps)
+        note_part = note_part.replace('b', '#')
+        
+        # For flat notation, adjust pitch
+        if 'b' in note_name:
+            if note_part in note_names:
+                pitch = note_names.index(note_part)
+                pitch -= 1  # Flat lowers the note
+                if pitch < 0:
+                    pitch += 12
+                    octave -= 1
+            else:
+                raise ValueError(f"Invalid note name: {note_name}")
+        else:
+            if note_part not in note_names:
+                raise ValueError(f"Invalid note name: {note_name}")
+            pitch = note_names.index(note_part)
+        
+        return (octave + 1) * 12 + pitch
 
 

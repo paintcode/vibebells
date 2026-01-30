@@ -1,4 +1,5 @@
 import logging
+from app.services.music_parser import MusicParser
 
 logger = logging.getLogger(__name__)
 
@@ -6,7 +7,7 @@ class BellAssignmentAlgorithm:
     """Implements the bell assignment algorithm with multi-bell support"""
     
     @staticmethod
-    def assign_bells(notes, players, strategy='experienced_first', priority_notes=None, config=None):
+    def assign_bells(notes, players, strategy='experienced_first', priority_notes=None, config=None, note_timings=None):
         """
         Assign bells to players based on strategy, supporting multiple bells per player.
         
@@ -16,6 +17,7 @@ class BellAssignmentAlgorithm:
             strategy: Assignment strategy ('experienced_first', 'balanced', 'min_transitions')
             priority_notes: Optional list of notes to prioritize (e.g., melody notes)
             config: Optional config dict with MAX_BELLS_PER_PLAYER
+            note_timings: Optional list of full note dicts with timing info (for swap cost optimization)
         
         Returns:
             Dict mapping player names to assignment dicts with 'bells', 'left_hand', 'right_hand'
@@ -60,7 +62,7 @@ class BellAssignmentAlgorithm:
             )
         elif strategy == 'min_transitions':
             assignments = BellAssignmentAlgorithm._assign_min_transitions(
-                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells
+                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells, note_timings
             )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
@@ -160,8 +162,14 @@ class BellAssignmentAlgorithm:
         return assignments
     
     @staticmethod
-    def _assign_min_transitions(notes, players, assignments, counts, priority_notes=None, max_bells=8):
-        """Assign notes to least-loaded players: ensure each player gets 2 first"""
+    def _assign_min_transitions(notes, players, assignments, counts, priority_notes=None, max_bells=8, note_timings=None):
+        """Assign notes with swap cost optimization: minimize hand swaps
+        
+        If note_timings provided, uses SwapCostCalculator to prefer bells
+        that require fewer hand swaps when assigned to a player.
+        """
+        
+        from app.services.swap_cost_calculator import SwapCostCalculator
         
         priority_notes = priority_notes or []
         all_notes = list(priority_notes) + [n for n in notes if n not in priority_notes]
@@ -180,15 +188,46 @@ class BellAssignmentAlgorithm:
                         assignments[min_player['name']]['bells'].append(note)
                         counts[min_player['name']] += 1
         
-        # Phase 2: Assign remaining notes to least-loaded players
+        # Phase 2: Assign remaining notes with swap cost optimization (if timings available)
         remaining_notes = [n for n in all_notes if n not in [b for p_data in assignments.values() for b in p_data['bells']]]
-        for note in remaining_notes:
-            min_player = min(players, key=lambda p: counts[p['name']])
-            if counts[min_player['name']] < max_bells:
-                assignments[min_player['name']]['bells'].append(note)
-                counts[min_player['name']] += 1
-            else:
-                logger.warning(f"Could not assign {note} - all players at capacity")
+        
+        if note_timings and len(remaining_notes) > 0:
+            # Convert note names to MIDI pitches for lookup
+            pitch_to_name = {MusicParser.note_name_to_pitch(n): n for n in notes}
+            
+            for note in remaining_notes:
+                best_player = None
+                best_score = float('inf')
+                
+                # Find player with lowest swap cost for this note
+                for player in players:
+                    if counts[player['name']] < max_bells:
+                        note_pitch = MusicParser.note_name_to_pitch(note)
+                        score = SwapCostCalculator.score_bell_for_player(
+                            assignments[player['name']],
+                            note_pitch,
+                            note_timings,
+                            weights={'swap': 0.5, 'frequency': 0.3, 'isolation': 0.2}
+                        )
+                        
+                        if score < best_score:
+                            best_score = score
+                            best_player = player
+                
+                if best_player:
+                    assignments[best_player['name']]['bells'].append(note)
+                    counts[best_player['name']] += 1
+                else:
+                    logger.warning(f"Could not assign {note} with swap optimization - all players at capacity")
+        else:
+            # Fallback to simple least-loaded strategy
+            for note in remaining_notes:
+                min_player = min(players, key=lambda p: counts[p['name']])
+                if counts[min_player['name']] < max_bells:
+                    assignments[min_player['name']]['bells'].append(note)
+                    counts[min_player['name']] += 1
+                else:
+                    logger.warning(f"Could not assign {note} - all players at capacity")
         
         return assignments
     

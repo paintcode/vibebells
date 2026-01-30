@@ -209,7 +209,7 @@ class ArrangementValidator:
             utilization_score = 5
         score += utilization_score
         
-        # Criterion 4: Melody/harmony balance (25 points)
+        # Criterion 4: Melody/harmony balance (20 points)
         melody_score = 0
         if music_data and music_data.get('melody_pitches'):
             # Convert melody pitches to note names for comparison
@@ -222,14 +222,78 @@ class ArrangementValidator:
             # Score based on coverage percentage
             if melody_note_names:
                 coverage_ratio = melody_coverage / len(melody_note_names)
-                melody_score = 25 * min(coverage_ratio, 1.0)
+                melody_score = 20 * min(coverage_ratio, 1.0)
             else:
-                melody_score = 25
+                melody_score = 20
         else:
             # No melody data, give full credit
-            melody_score = 25
+            melody_score = 20
         
         score += melody_score
         
+        # Criterion 5: Hand swap efficiency (20 points)
+        hand_swap_score = ArrangementValidator._calculate_hand_swap_score(arrangement, music_data)
+        score += hand_swap_score
+        
         return min(100, max(0, score))
+    
+    @staticmethod
+    def _calculate_hand_swap_score(arrangement, music_data):
+        """
+        Calculate hand swap efficiency score (0-20 points).
+        
+        Scores better when players need fewer hand swaps.
+        If no timing data available, gives full credit.
+        """
+        if not music_data or not music_data.get('notes'):
+            return 20  # Full credit if no data to evaluate
+        
+        from app.services.swap_cost_calculator import SwapCostCalculator
+        from app.services.music_parser import MusicParser
+        
+        notes = music_data.get('notes', [])
+        if not notes:
+            return 20
+        
+        total_swap_cost = 0
+        num_players = 0
+        
+        for player_name, player_data in arrangement.items():
+            if len(player_data.get('bells', [])) > 1:
+                # Calculate swap cost for this player
+                # We need to simulate each bell assignment to see total swaps
+                bells = player_data.get('bells', [])
+                player_notes = [n for n in notes if MusicParser.pitch_to_note_name(n.get('pitch', 0)) in bells]
+                
+                # Count swaps by simulating timeline
+                swaps = 0
+                current_hand = None
+                
+                # Build hand map
+                hand_map = {}
+                for idx, bell in enumerate(bells):
+                    hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
+                
+                # Walk through timeline
+                for note in sorted(player_notes, key=lambda n: n.get('time', 0)):
+                    note_name = MusicParser.pitch_to_note_name(note.get('pitch', 0))
+                    if note_name in bells:
+                        required_hand = hand_map[note_name]
+                        if current_hand is not None and current_hand != required_hand:
+                            swaps += 1
+                        current_hand = required_hand
+                
+                total_swap_cost += swaps
+                num_players += 1
+        
+        if num_players == 0:
+            return 20  # No multi-bell players
+        
+        # Normalize: assume typical max is 5 swaps per player
+        avg_swap_cost = total_swap_cost / num_players
+        max_acceptable = 5
+        efficiency = max(0, 1.0 - (avg_swap_cost / max_acceptable))
+        
+        return efficiency * 20
+
 
