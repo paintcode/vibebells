@@ -2,6 +2,7 @@ from app.services.bell_assignment import BellAssignmentAlgorithm
 from app.services.music_parser import MusicParser
 from app.services.conflict_resolver import ConflictResolver
 from app.services.arrangement_validator import ArrangementValidator
+from flask import current_app
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,11 +53,18 @@ class ArrangementGenerator:
         
         for strategy, description in strategies:
             try:
+                # Build config dict from Flask config
+                config = {
+                    'MAX_BELLS_PER_PLAYER': current_app.config.get('MAX_BELLS_PER_PLAYER', 8),
+                    'HAND_GAP_THRESHOLD_BEATS': current_app.config.get('HAND_GAP_THRESHOLD_BEATS', 1.0)
+                }
+                
                 assignment = BellAssignmentAlgorithm.assign_bells(
                     unique_notes, 
                     players, 
                     strategy=strategy,
-                    priority_notes=melody_notes
+                    priority_notes=melody_notes,
+                    config=config
                 )
                 
                 # Resolve any conflicts
@@ -64,7 +72,7 @@ class ArrangementGenerator:
                 assignment = ConflictResolver.balance_assignments(assignment)
                 assignment = ConflictResolver.optimize_for_experience(assignment, players)
                 
-                # Validate arrangement
+                # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
                 sustainability = ArrangementValidator.sustainability_check(assignment, music_data)
                 quality_score = ArrangementValidator.calculate_quality_score(assignment, music_data)

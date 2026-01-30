@@ -13,6 +13,10 @@ class Config:
     ALLOWED_EXTENSIONS = {'mid', 'midi', 'musicxml', 'xml'}
     MIN_PLAYERS = 1
     MAX_PLAYERS = 20
+    
+    # Multi-bell configuration
+    MAX_BELLS_PER_PLAYER = 8  # Practical limit for handbell ringing
+    HAND_GAP_THRESHOLD_BEATS = 1.0  # Minimum beats between same-hand notes (configurable)
 
 class DevelopmentConfig(Config):
     """Development configuration"""

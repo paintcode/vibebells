@@ -161,6 +161,49 @@
   font-size: 0.9rem;
 }
 
+.hand-assignment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+}
+
+.hand-column {
+  padding: 0.75rem;
+  background-color: #f0f4ff;
+  border-radius: 4px;
+}
+
+.hand-column h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hand-bells {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.bell-badge.left {
+  background-color: #42a5f5;
+}
+
+.bell-badge.right {
+  background-color: #ef5350;
+}
+
+.no-hand-bells {
+  color: #aaa;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 .arrangement-actions {
   display: flex;
   gap: 1rem;

@@ -1,6 +1,6 @@
 """
 Conflict Resolution for Bell Assignments
-Resolves duplicate assignments and improves arrangement quality
+Resolves duplicate assignments, balances distribution, and validates hand constraints
 """
 
 import logging
@@ -18,14 +18,15 @@ class ConflictResolver:
         If a bell is assigned to multiple players, reassign to player with capacity.
         
         Args:
-            arrangement: Dict mapping player names to bell lists
+            arrangement: Dict mapping player names to assignment dicts with 'bells'
             
         Returns:
             Resolved arrangement with no duplicates
         """
         # Find duplicates
         bell_to_players = {}
-        for player_name, bells in arrangement.items():
+        for player_name, player_data in arrangement.items():
+            bells = player_data.get('bells', [])
             for bell in bells:
                 if bell not in bell_to_players:
                     bell_to_players[bell] = []
@@ -39,7 +40,14 @@ class ConflictResolver:
         logger.warning(f"Found {len(duplicates)} duplicate bell assignments, resolving...")
         
         # Create mutable copy
-        resolved = {player: list(bells) for player, bells in arrangement.items()}
+        resolved = {
+            player: {
+                'bells': list(data.get('bells', [])),
+                'left_hand': list(data.get('left_hand', [])),
+                'right_hand': list(data.get('right_hand', []))
+            }
+            for player, data in arrangement.items()
+        }
         unassigned_bells = []
         
         # For each duplicate, keep with first player and remove from others
@@ -48,17 +56,29 @@ class ConflictResolver:
             
             # Remove from other players
             for secondary_player in players[1:]:
-                if bell in resolved[secondary_player]:
-                    resolved[secondary_player].remove(bell)
+                if bell in resolved[secondary_player]['bells']:
+                    resolved[secondary_player]['bells'].remove(bell)
+                    # Also remove from hand tracking
+                    if bell in resolved[secondary_player]['left_hand']:
+                        resolved[secondary_player]['left_hand'].remove(bell)
+                    if bell in resolved[secondary_player]['right_hand']:
+                        resolved[secondary_player]['right_hand'].remove(bell)
                     unassigned_bells.append(bell)
                     logger.debug(f"Removed duplicate {bell} from {secondary_player}, kept with {primary_player}")
         
         # Reassign removed bells to players with capacity
+        max_bells = 8  # Default max, could be configurable
         for bell in unassigned_bells:
             assigned = False
             for player_name in resolved:
-                if len(resolved[player_name]) < 2:
-                    resolved[player_name].append(bell)
+                if len(resolved[player_name]['bells']) < max_bells:
+                    resolved[player_name]['bells'].append(bell)
+                    # Re-assign to hand based on index
+                    bell_idx = len(resolved[player_name]['bells']) - 1
+                    if bell_idx % 2 == 0:
+                        resolved[player_name]['left_hand'].append(bell)
+                    else:
+                        resolved[player_name]['right_hand'].append(bell)
                     assigned = True
                     logger.debug(f"Reassigned {bell} to {player_name}")
                     break
@@ -76,7 +96,7 @@ class ConflictResolver:
         Redistributes bells to even out workload across players.
         
         Args:
-            arrangement: Dict mapping player names to bell lists
+            arrangement: Dict mapping player names to assignment dicts
             target_bells_per_player: Ideal distribution (default 2)
             
         Returns:
@@ -85,14 +105,21 @@ class ConflictResolver:
         target_bells_per_player = target_bells_per_player or 2
         
         # Calculate current distribution
-        player_counts = {player: len(bells) for player, bells in arrangement.items()}
+        player_counts = {player: len(data.get('bells', [])) for player, data in arrangement.items()}
         total_bells = sum(player_counts.values())
         
         if total_bells == 0 or len(arrangement) == 0:
             return arrangement
         
         # Create mutable copy
-        balanced = {player: list(bells) for player, bells in arrangement.items()}
+        balanced = {
+            player: {
+                'bells': list(data.get('bells', [])),
+                'left_hand': list(data.get('left_hand', [])),
+                'right_hand': list(data.get('right_hand', []))
+            }
+            for player, data in arrangement.items()
+        }
         
         # Calculate ideal distribution
         ideal_per_player = total_bells / len(arrangement)
@@ -116,9 +143,23 @@ class ConflictResolver:
             source = most_loaded[0]
             dest = least_loaded[0]
             
-            if balanced[source] and len(balanced[dest]) < target_bells_per_player:
-                bell = balanced[source].pop()
-                balanced[dest].append(bell)
+            if balanced[source]['bells'] and len(balanced[dest]['bells']) < target_bells_per_player:
+                bell = balanced[source]['bells'].pop()
+                balanced[dest]['bells'].append(bell)
+                
+                # Update hand tracking
+                if bell in balanced[source]['left_hand']:
+                    balanced[source]['left_hand'].remove(bell)
+                if bell in balanced[source]['right_hand']:
+                    balanced[source]['right_hand'].remove(bell)
+                
+                # Re-assign to hand in destination
+                bell_idx = len(balanced[dest]['bells']) - 1
+                if bell_idx % 2 == 0:
+                    balanced[dest]['left_hand'].append(bell)
+                else:
+                    balanced[dest]['right_hand'].append(bell)
+                
                 player_counts[source] -= 1
                 player_counts[dest] += 1
                 changes += 1
@@ -137,7 +178,7 @@ class ConflictResolver:
         Moves challenging notes (melody, high-frequency) to experienced players.
         
         Args:
-            arrangement: Dict mapping player names to bell lists
+            arrangement: Dict mapping player names to assignment dicts
             players_info: List of player dicts with 'name' and 'experience'
             
         Returns:
@@ -149,7 +190,14 @@ class ConflictResolver:
         experience_order = {'experienced': 0, 'intermediate': 1, 'beginner': 2}
         
         # Create mutable copy
-        optimized = {player: list(bells) for player, bells in arrangement.items()}
+        optimized = {
+            player: {
+                'bells': list(data.get('bells', [])),
+                'left_hand': list(data.get('left_hand', [])),
+                'right_hand': list(data.get('right_hand', []))
+            }
+            for player, data in arrangement.items()
+        }
         
         # Get experienced and beginner players
         experienced = [p for p in players_info if p.get('experience') == 'experienced']
@@ -158,25 +206,44 @@ class ConflictResolver:
         if not experienced or not beginners:
             return optimized
         
-        # Try to move complex notes from beginners to experienced
+        # Try to move bells from beginners to experienced
+        # IMPORTANT: Never move bells from beginners if they have 2 or fewer bells
         changes = 0
         for beginner in beginners:
             beginner_name = beginner['name']
-            if not optimized[beginner_name]:
+            bells = optimized[beginner_name]['bells']
+            
+            # Only move if beginner has MORE than 2 bells (protect the minimum)
+            if len(bells) <= 2:
                 continue
             
             # Look for experienced player with capacity
             for exp in experienced:
                 exp_name = exp['name']
-                if len(optimized[exp_name]) < 2:
+                if len(optimized[exp_name]['bells']) < 8:  # max_bells
                     # Move one bell from beginner to experienced
-                    bell = optimized[beginner_name].pop()
-                    optimized[exp_name].append(bell)
+                    bell = optimized[beginner_name]['bells'].pop()
+                    optimized[exp_name]['bells'].append(bell)
+                    
+                    # Update hand tracking in source
+                    if bell in optimized[beginner_name]['left_hand']:
+                        optimized[beginner_name]['left_hand'].remove(bell)
+                    if bell in optimized[beginner_name]['right_hand']:
+                        optimized[beginner_name]['right_hand'].remove(bell)
+                    
+                    # Assign to hand in destination
+                    bell_idx = len(optimized[exp_name]['bells']) - 1
+                    if bell_idx % 2 == 0:
+                        optimized[exp_name]['left_hand'].append(bell)
+                    else:
+                        optimized[exp_name]['right_hand'].append(bell)
+                    
                     changes += 1
                     logger.debug(f"Moved {bell} from {beginner_name} (beginner) to {exp_name} (experienced)")
                     break
         
         if changes > 0:
-            logger.info(f"Optimized {changes} bell assignments for experience level")
+            logger.info(f"Optimized {changes} bell assignments for experience level (preserved minimum 2 per beginner)")
         
         return optimized
+
