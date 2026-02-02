@@ -59,13 +59,23 @@ class ArrangementGenerator:
                     'HAND_GAP_THRESHOLD_BEATS': current_app.config.get('HAND_GAP_THRESHOLD_BEATS', 1.0)
                 }
                 
+                # Build frequency map from note data
+                note_frequencies = {}
+                if music_data.get('notes'):
+                    for note in music_data['notes']:
+                        note_pitch = note.get('pitch')
+                        if note_pitch:
+                            note_name = MusicParser.pitch_to_note_name(note_pitch)
+                            note_frequencies[note_name] = note_frequencies.get(note_name, 0) + 1
+                
                 assignment = BellAssignmentAlgorithm.assign_bells(
                     unique_notes, 
                     players, 
                     strategy=strategy,
                     priority_notes=melody_notes,
                     config=config,
-                    note_timings=music_data.get('notes')  # Pass note timing data
+                    note_timings=music_data.get('notes'),  # Pass note timing data
+                    note_frequencies=note_frequencies  # Pass frequency data
                 )
                 
                 # Resolve any conflicts

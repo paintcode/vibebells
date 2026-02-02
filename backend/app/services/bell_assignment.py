@@ -7,7 +7,7 @@ class BellAssignmentAlgorithm:
     """Implements the bell assignment algorithm with multi-bell support"""
     
     @staticmethod
-    def assign_bells(notes, players, strategy='experienced_first', priority_notes=None, config=None, note_timings=None):
+    def assign_bells(notes, players, strategy='experienced_first', priority_notes=None, config=None, note_timings=None, note_frequencies=None):
         """
         Assign bells to players based on strategy, supporting multiple bells per player.
         
@@ -18,6 +18,7 @@ class BellAssignmentAlgorithm:
             priority_notes: Optional list of notes to prioritize (e.g., melody notes)
             config: Optional config dict with MAX_BELLS_PER_PLAYER
             note_timings: Optional list of full note dicts with timing info (for swap cost optimization)
+            note_frequencies: Optional dict mapping notes to frequency counts (for assignment ordering)
         
         Returns:
             Dict mapping player names to assignment dicts with 'bells', 'left_hand', 'right_hand'
@@ -54,15 +55,15 @@ class BellAssignmentAlgorithm:
         
         if strategy == 'experienced_first':
             assignments = BellAssignmentAlgorithm._assign_experienced_first(
-                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells
+                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells, note_frequencies
             )
         elif strategy == 'balanced':
             assignments = BellAssignmentAlgorithm._assign_balanced(
-                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells
+                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells, note_frequencies
             )
         elif strategy == 'min_transitions':
             assignments = BellAssignmentAlgorithm._assign_min_transitions(
-                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells, note_timings
+                notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells, note_timings, note_frequencies
             )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
@@ -73,25 +74,36 @@ class BellAssignmentAlgorithm:
         return assignments
     
     @staticmethod
-    def _assign_experienced_first(notes, players, assignments, counts, priority_notes=None, max_bells=8):
-        """Assign bells ensuring every player gets at least 2, then extras to experienced players"""
+    def _assign_experienced_first(notes, players, assignments, counts, priority_notes=None, max_bells=8, note_frequencies=None):
+        """Assign bells ensuring every player gets at least 2, then extras to experienced players.
+        
+        Sorts non-priority notes by frequency (descending) so most-played bells are assigned first.
+        Least-played bells remain for extra bell slots.
+        """
         
         priority_notes = priority_notes or []
         all_notes = list(notes)
         assigned_notes = set()
         
+        # Sort non-priority notes by frequency (most frequent first)
+        # This ensures frequent bells are assigned early, leaving rare bells for extras
+        non_priority_notes = [n for n in all_notes if n not in priority_notes]
+        if note_frequencies:
+            non_priority_notes.sort(key=lambda n: note_frequencies.get(n, 0), reverse=True)
+            logger.debug(f"Sorted {len(non_priority_notes)} non-priority notes by frequency (descending)")
+        
         # Phase 1: Ensure every player gets at least 2 bells
         for _ in range(2):  # Two rounds to give each player 2 bells
             for player in players:
                 if counts[player['name']] < 2 and all_notes:
-                    # Prefer priority notes, then remaining
+                    # Prefer priority notes, then remaining (sorted by frequency, most frequent first)
                     note = None
                     for n in priority_notes:
                         if n not in assigned_notes:
                             note = n
                             break
                     if not note:
-                        for n in all_notes:
+                        for n in non_priority_notes:
                             if n not in assigned_notes:
                                 note = n
                                 break
@@ -113,8 +125,8 @@ class BellAssignmentAlgorithm:
                         assigned_notes.add(note)
                         break
         
-        # Phase 3: Assign remaining notes
-        for note in all_notes:
+        # Phase 3: Assign remaining notes (sorted by frequency - least frequent last)
+        for note in non_priority_notes:
             if note not in assigned_notes:
                 assigned = False
                 for player in players:
@@ -132,12 +144,24 @@ class BellAssignmentAlgorithm:
         return assignments
     
     @staticmethod
-    def _assign_balanced(notes, players, assignments, counts, priority_notes=None, max_bells=8):
-        """Distribute notes evenly: ensure each player gets 2 bells first, then distribute extras"""
+    def _assign_balanced(notes, players, assignments, counts, priority_notes=None, max_bells=8, note_frequencies=None):
+        """Distribute notes evenly: ensure each player gets 2 bells first, then distribute extras.
+        
+        Sorts non-priority notes by frequency (descending) so most-played bells are assigned first.
+        Least-played bells remain for extra bell slots.
+        """
         
         priority_notes = priority_notes or []
         unassigned_notes = []
-        all_notes = list(priority_notes) + [n for n in notes if n not in priority_notes]
+        non_priority = [n for n in notes if n not in priority_notes]
+        
+        # Sort non-priority notes by frequency (most frequent first)
+        # This ensures frequent bells are assigned early, leaving rare bells for extras
+        if note_frequencies:
+            non_priority.sort(key=lambda n: note_frequencies.get(n, 0), reverse=True)
+            logger.debug(f"Sorted {len(non_priority)} non-priority notes by frequency (descending)")
+        
+        all_notes = list(priority_notes) + non_priority
         
         # Phase 1: Ensure every player gets at least 2 bells using round-robin
         note_idx = 0
@@ -162,17 +186,26 @@ class BellAssignmentAlgorithm:
         return assignments
     
     @staticmethod
-    def _assign_min_transitions(notes, players, assignments, counts, priority_notes=None, max_bells=8, note_timings=None):
-        """Assign notes with swap cost optimization: minimize hand swaps
+    def _assign_min_transitions(notes, players, assignments, counts, priority_notes=None, max_bells=8, note_timings=None, note_frequencies=None):
+        """Assign notes with swap cost optimization: minimize hand swaps.
         
-        If note_timings provided, uses SwapCostCalculator to prefer bells
-        that require fewer hand swaps when assigned to a player.
+        Sorts non-priority notes by frequency (descending) so most-played bells are assigned first.
+        Least-played bells remain for extra bell slots.
+        If note_timings provided, uses SwapCostCalculator to prefer bells that require fewer hand swaps.
         """
         
         from app.services.swap_cost_calculator import SwapCostCalculator
         
         priority_notes = priority_notes or []
-        all_notes = list(priority_notes) + [n for n in notes if n not in priority_notes]
+        non_priority = [n for n in notes if n not in priority_notes]
+        
+        # Sort non-priority notes by frequency (most frequent first)
+        # This ensures frequent bells are assigned early, leaving rare bells for extras
+        if note_frequencies:
+            non_priority.sort(key=lambda n: note_frequencies.get(n, 0), reverse=True)
+            logger.debug(f"Sorted {len(non_priority)} non-priority notes by frequency (descending)")
+        
+        all_notes = list(priority_notes) + non_priority
         
         # Phase 1: Ensure every player gets at least 2 bells
         for _ in range(2):  # Two rounds to give each player 2 bells
@@ -220,7 +253,7 @@ class BellAssignmentAlgorithm:
                 else:
                     logger.warning(f"Could not assign {note} with swap optimization - all players at capacity")
         else:
-            # Fallback to simple least-loaded strategy
+            # Fallback to simple least-loaded strategy (already sorted by frequency)
             for note in remaining_notes:
                 min_player = min(players, key=lambda p: counts[p['name']])
                 if counts[min_player['name']] < max_bells:
