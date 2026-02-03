@@ -76,17 +76,46 @@ def generate_arrangements():
         
         # Generate arrangements
         arrangement_gen = ArrangementGenerator()
-        arrangements = arrangement_gen.generate(music_data, players)
-        logger.info(f"Generated {len(arrangements)} arrangements")
+        result = arrangement_gen.generate(music_data, players)
         
-        return jsonify({
-            'success': True,
-            'arrangements': arrangements,
-            'note_count': music_data['note_count'],
-            'melody_count': len(music_data.get('melody_pitches', [])),
-            'harmony_count': len(music_data.get('harmony_pitches', [])),
-            'best_arrangement': arrangements[0] if arrangements else None
-        }), 200
+        # Handle both old (list) and new (dict) return structures
+        if isinstance(result, dict) and 'arrangements' in result:
+            arrangements = result['arrangements']
+            logger.info(f"Generated {len(arrangements)} arrangements")
+            
+            response_data = {
+                'success': True,
+                'arrangements': arrangements,
+                'note_count': music_data['note_count'],
+                'melody_count': len(music_data.get('melody_pitches', [])),
+                'harmony_count': len(music_data.get('harmony_pitches', [])),
+                'best_arrangement': arrangements[0] if arrangements else None
+            }
+            
+            # Add expansion info if applicable
+            if result.get('expanded'):
+                response_data['expansion_info'] = {
+                    'expanded': True,
+                    'original_player_count': result['original_player_count'],
+                    'final_player_count': result['final_player_count'],
+                    'minimum_required': result['minimum_players'],
+                    'message': f"The song requires at least {result['minimum_players']} players. Arrangements show {result['final_player_count']} players (including {result['final_player_count'] - result['original_player_count']} virtual players)."
+                }
+            
+            return jsonify(response_data), 200
+        else:
+            # Fallback for old return structure (just list)
+            arrangements = result if isinstance(result, list) else [result]
+            logger.info(f"Generated {len(arrangements)} arrangements")
+            
+            return jsonify({
+                'success': True,
+                'arrangements': arrangements,
+                'note_count': music_data['note_count'],
+                'melody_count': len(music_data.get('melody_pitches', [])),
+                'harmony_count': len(music_data.get('harmony_pitches', [])),
+                'best_arrangement': arrangements[0] if arrangements else None
+            }), 200
     
     except ValueError as e:
         raise APIError(str(e), 'ERR_VALIDATION', 400)

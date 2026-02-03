@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './ArrangementDisplay.css';
 
-function ArrangementDisplay({ arrangements }) {
+function ArrangementDisplay({ arrangements, expansionInfo }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
 
   if (!arrangements || arrangements.length === 0) {
@@ -18,6 +18,25 @@ function ArrangementDisplay({ arrangements }) {
 
   return (
     <div className="arrangement-display">
+      {expansionInfo && expansionInfo.expanded && (
+        <div className="expansion-notification">
+          <div className="expansion-icon">⚠</div>
+          <div className="expansion-content">
+            <h4>Players Expanded</h4>
+            <p>{expansionInfo.message}</p>
+            <details className="expansion-details">
+              <summary>Details</summary>
+              <ul>
+                <li><strong>Original players:</strong> {expansionInfo.original_player_count}</li>
+                <li><strong>Final players:</strong> {expansionInfo.final_player_count}</li>
+                <li><strong>Virtual players added:</strong> {expansionInfo.final_player_count - expansionInfo.original_player_count}</li>
+                <li><strong>Minimum required:</strong> {expansionInfo.minimum_required}</li>
+              </ul>
+            </details>
+          </div>
+        </div>
+      )}
+
       <div className="arrangement-info">
         <p>
           <strong>Strategy:</strong> {current.description || current.strategy}

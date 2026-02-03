@@ -12,6 +12,7 @@ function App() {
     { id: 3, name: 'Player 3', experience: 'beginner', bells: [] }
   ]);
   const [arrangements, setArrangements] = useState(null);
+  const [expansionInfo, setExpansionInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -53,6 +54,12 @@ function App() {
 
       if (response.ok) {
         setArrangements(data.arrangements);
+        // Extract and store expansion info if present
+        if (data.expansion_info) {
+          setExpansionInfo(data.expansion_info);
+        } else {
+          setExpansionInfo(null);
+        }
       } else {
         // Handle specific error codes
         const errorMessage = getErrorMessage(data.code, data.error);
@@ -126,7 +133,7 @@ function App() {
           {arrangements && (
             <section className="section">
               <h2>3. Arrangements</h2>
-              <ArrangementDisplay arrangements={arrangements} />
+              <ArrangementDisplay arrangements={arrangements} expansionInfo={expansionInfo} />
             </section>
           )}
         </div>

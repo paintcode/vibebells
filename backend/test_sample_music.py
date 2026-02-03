@@ -42,7 +42,15 @@ def test_sample_music_with_beginners():
         
         # Generate arrangement
         arrangement_gen = ArrangementGenerator()
-        arrangements = arrangement_gen.generate(music_data, players)
+        result = arrangement_gen.generate(music_data, players)
+        
+        # Handle new return structure with expansion info
+        if isinstance(result, dict) and 'arrangements' in result:
+            arrangements = result['arrangements']
+            expansion_info = result.get('expansion_info')
+        else:
+            arrangements = result if isinstance(result, list) else [result]
+            expansion_info = None
         
         if not arrangements:
             print("❌ No arrangements generated")
@@ -53,6 +61,11 @@ def test_sample_music_with_beginners():
         print(f"\n✓ Generated {len(arrangements)} arrangements")
         print(f"✓ Best arrangement: {best['strategy']}")
         print(f"✓ Quality score: {best['quality_score']:.1f}/100")
+        
+        # Show expansion info if applicable
+        if expansion_info:
+            print(f"\n⚠ Player Expansion Needed:")
+            print(f"  {expansion_info['message']}")
         
         # Verify all players have at least 2 bells
         print("\nBell Assignment:")

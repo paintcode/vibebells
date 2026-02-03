@@ -15,7 +15,15 @@ class Config:
     MAX_PLAYERS = 20
     
     # Multi-bell configuration
-    MAX_BELLS_PER_PLAYER = 8  # Practical limit for handbell ringing
+    MAX_BELLS_PER_PLAYER = 8  # Overall practical limit
+    
+    # Experience-level-based maximum bells
+    MAX_BELLS_PER_EXPERIENCE = {
+        'experienced': 5,      # Experienced players can handle up to 5 bells
+        'intermediate': 3,     # Intermediate players up to 3 bells
+        'beginner': 2          # Beginners exactly 2 bells (1 per hand)
+    }
+    
     HAND_GAP_THRESHOLD_BEATS = 1.0  # Minimum beats between same-hand notes (configurable)
 
 class DevelopmentConfig(Config):
