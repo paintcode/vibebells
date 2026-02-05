@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
 import './PlayerConfig.css';
 
-function PlayerConfig({ players, onChange }) {
+export default function PlayerConfig({ players, onChange }) {
   const handlePlayerChange = (id, field, value) => {
     const updated = players.map(p =>
       p.id === id ? { ...p, [field]: value } : p
@@ -61,5 +63,3 @@ function PlayerConfig({ players, onChange }) {
     </div>
   );
 }
-
-export default PlayerConfig;
