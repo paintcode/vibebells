@@ -11,13 +11,13 @@ class ArrangementValidator:
     """Validate and check sustainability of bell arrangements"""
     
     @staticmethod
-    def validate(arrangement, max_bells_per_player=2):
+    def validate(arrangement, max_bells_per_player=8):
         """
         Validate arrangement against constraints.
         
         Args:
-            arrangement: Dict mapping player names to bell lists
-            max_bells_per_player: Maximum bells per player (default 2)
+            arrangement: Dict mapping player names to assignment dicts with 'bells'
+            max_bells_per_player: Maximum bells per player (default 8)
             
         Returns:
             Dict with validation results and issues
@@ -29,10 +29,14 @@ class ArrangementValidator:
             issues.append("Empty arrangement")
             return {'valid': False, 'issues': issues, 'warnings': warnings}
         
-        # Check bell count per player
+        # Check bell count per player and hand distribution
         max_seen = 0
         players_at_limit = []
-        for player_name, bells in arrangement.items():
+        for player_name, player_data in arrangement.items():
+            bells = player_data.get('bells', [])
+            left_hand = player_data.get('left_hand', [])
+            right_hand = player_data.get('right_hand', [])
+            
             bell_count = len(bells)
             max_seen = max(max_seen, bell_count)
             
@@ -42,11 +46,18 @@ class ArrangementValidator:
                 players_at_limit.append(player_name)
             elif bell_count == 0:
                 warnings.append(f"{player_name} has no bells assigned")
+            
+            # Check hand balance: if player has >1 bell, should have at least 1 per hand
+            if bell_count > 1:
+                if len(left_hand) == 0:
+                    warnings.append(f"{player_name} has no bells in left hand")
+                if len(right_hand) == 0:
+                    warnings.append(f"{player_name} has no bells in right hand")
         
         # Check for duplicate bell assignments
         all_bells = []
-        for bells in arrangement.values():
-            all_bells.extend(bells)
+        for player_data in arrangement.values():
+            all_bells.extend(player_data.get('bells', []))
         
         duplicates = []
         seen = set()
@@ -59,7 +70,7 @@ class ArrangementValidator:
             issues.append(f"Duplicate bells assigned: {', '.join(set(duplicates))}")
         
         # Calculate utilization
-        total_bells = sum(len(bells) for bells in arrangement.values())
+        total_bells = sum(len(player_data.get('bells', [])) for player_data in arrangement.values())
         unique_bells = len(set(all_bells))
         utilization = unique_bells / total_bells if total_bells > 0 else 0
         
@@ -80,11 +91,11 @@ class ArrangementValidator:
         Check sustainability: ensure players can physically ring bells without fatigue.
         
         Heuristics:
-        - Players with 2 bells should have them at different registers (not adjacent)
+        - Players with bells in both hands should have them at different registers (not adjacent)
         - Melody players should have some lower-register support
         
         Args:
-            arrangement: Dict mapping player names to bell lists
+            arrangement: Dict mapping player names to assignment dicts
             music_data: Dict with parsed music info and frequencies
             
         Returns:
@@ -95,8 +106,10 @@ class ArrangementValidator:
         issues = []
         recommendations = []
         
-        for player_name, bells in arrangement.items():
-            if len(bells) == 2:
+        for player_name, player_data in arrangement.items():
+            bells = player_data.get('bells', [])
+            
+            if len(bells) >= 2:
                 # Check pitch distance between bells
                 pitches = []
                 for bell_name in bells:
@@ -108,25 +121,29 @@ class ArrangementValidator:
                         
                         note_to_semitone = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
                         midi_pitch = 12 * (octave + 1) + note_to_semitone.get(note_letter, 0)
-                        pitches.append(midi_pitch)
+                        pitches.append((bell_name, midi_pitch))
                     except:
                         pass
                 
-                if len(pitches) == 2:
-                    pitch_distance = abs(pitches[1] - pitches[0])
-                    
-                    # Warn if bells are too close (less than 3 semitones = minor third)
-                    if pitch_distance < 3:
-                        recommendations.append(
-                            f"{player_name}: Bells {bells[0]} and {bells[1]} are very close ({pitch_distance} semitones). "
-                            f"Consider spacing further apart for easier ringing."
-                        )
-                    
-                    # Recommend distribution
-                    if pitch_distance > 12:
-                        recommendations.append(
-                            f"{player_name}: Large range ({pitch_distance} semitones). Ensure player can comfortably reach both."
-                        )
+                # Check spacing between all pairs
+                for i in range(len(pitches)):
+                    for j in range(i + 1, len(pitches)):
+                        bell_name_i, pitch_i = pitches[i]
+                        bell_name_j, pitch_j = pitches[j]
+                        pitch_distance = abs(pitch_j - pitch_i)
+                        
+                        # Warn if bells are too close (less than 3 semitones)
+                        if pitch_distance < 3:
+                            recommendations.append(
+                                f"{player_name}: Bells {bell_name_i} and {bell_name_j} are very close ({pitch_distance} semitones). "
+                                f"Consider spacing further apart for easier ringing."
+                            )
+                        
+                        # Recommend distribution for large ranges
+                        if pitch_distance > 12:
+                            recommendations.append(
+                                f"{player_name}: Large range ({pitch_distance} semitones). Ensure player can comfortably reach all bells."
+                            )
         
         return {
             'issues': issues,
@@ -143,10 +160,10 @@ class ArrangementValidator:
         - Even distribution across players (25%)
         - No empty players (25%)
         - Melody/harmony separation (if available) (25%)
-        - Sustainable bell spacing (25%)
+        - Hand utilization balance (25%)
         
         Args:
-            arrangement: Dict mapping player names to bell lists
+            arrangement: Dict mapping player names to assignment dicts
             music_data: Optional music data with melody/harmony info
             
         Returns:
@@ -155,7 +172,7 @@ class ArrangementValidator:
         score = 0
         
         # Criterion 1: Even distribution (25 points)
-        bell_counts = [len(bells) for bells in arrangement.values()]
+        bell_counts = [len(player_data.get('bells', [])) for player_data in arrangement.values()]
         if bell_counts and len(bell_counts) > 1:
             avg_bells = sum(bell_counts) / len(bell_counts)
             variance = sum((c - avg_bells) ** 2 for c in bell_counts) / len(bell_counts)
@@ -182,36 +199,101 @@ class ArrangementValidator:
         # Criterion 3: Player capacity utilization (25 points)
         # Better if players have some "breathing room" but not too empty
         avg_utilization = sum(c for c in bell_counts) / (2 * len(bell_counts)) if bell_counts else 0
-        if avg_utilization <= 0.7:  # Very underutilized (much spare capacity)
+        if avg_utilization <= 0.7:  # Very underutilized
             utilization_score = 10
         elif avg_utilization <= 0.9:  # Good balance
             utilization_score = 25
         elif avg_utilization <= 1.0:  # At or near capacity
             utilization_score = 20
-        else:  # Over capacity (shouldn't happen with proper validation)
+        else:  # Over capacity
             utilization_score = 5
         score += utilization_score
         
-        # Criterion 4: Melody/harmony balance (25 points)
+        # Criterion 4: Melody/harmony balance (20 points)
         melody_score = 0
         if music_data and music_data.get('melody_pitches'):
             # Convert melody pitches to note names for comparison
             from app.services.music_parser import MusicParser
             melody_note_names = set(MusicParser.pitch_to_note_name(p) for p in music_data.get('melody_pitches', []))
             
-            all_bells_str = [bell for bells in arrangement.values() for bell in bells]
+            all_bells_str = [bell for player_data in arrangement.values() for bell in player_data.get('bells', [])]
             melody_coverage = len([b for b in all_bells_str if b in melody_note_names])
             
             # Score based on coverage percentage
             if melody_note_names:
                 coverage_ratio = melody_coverage / len(melody_note_names)
-                melody_score = 25 * min(coverage_ratio, 1.0)
+                melody_score = 20 * min(coverage_ratio, 1.0)
             else:
-                melody_score = 25
+                melody_score = 20
         else:
             # No melody data, give full credit
-            melody_score = 25
+            melody_score = 20
         
         score += melody_score
         
+        # Criterion 5: Hand swap efficiency (20 points)
+        hand_swap_score = ArrangementValidator._calculate_hand_swap_score(arrangement, music_data)
+        score += hand_swap_score
+        
         return min(100, max(0, score))
+    
+    @staticmethod
+    def _calculate_hand_swap_score(arrangement, music_data):
+        """
+        Calculate hand swap efficiency score (0-20 points).
+        
+        Scores better when players need fewer hand swaps.
+        If no timing data available, gives full credit.
+        """
+        if not music_data or not music_data.get('notes'):
+            return 20  # Full credit if no data to evaluate
+        
+        from app.services.swap_cost_calculator import SwapCostCalculator
+        from app.services.music_parser import MusicParser
+        
+        notes = music_data.get('notes', [])
+        if not notes:
+            return 20
+        
+        total_swap_cost = 0
+        num_players = 0
+        
+        for player_name, player_data in arrangement.items():
+            if len(player_data.get('bells', [])) > 1:
+                # Calculate swap cost for this player
+                # We need to simulate each bell assignment to see total swaps
+                bells = player_data.get('bells', [])
+                player_notes = [n for n in notes if MusicParser.pitch_to_note_name(n.get('pitch', 0)) in bells]
+                
+                # Count swaps by simulating timeline
+                swaps = 0
+                current_hand = None
+                
+                # Build hand map
+                hand_map = {}
+                for idx, bell in enumerate(bells):
+                    hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
+                
+                # Walk through timeline
+                for note in sorted(player_notes, key=lambda n: n.get('time', 0)):
+                    note_name = MusicParser.pitch_to_note_name(note.get('pitch', 0))
+                    if note_name in bells:
+                        required_hand = hand_map[note_name]
+                        if current_hand is not None and current_hand != required_hand:
+                            swaps += 1
+                        current_hand = required_hand
+                
+                total_swap_cost += swaps
+                num_players += 1
+        
+        if num_players == 0:
+            return 20  # No multi-bell players
+        
+        # Normalize: assume typical max is 5 swaps per player
+        avg_swap_cost = total_swap_cost / num_players
+        max_acceptable = 5
+        efficiency = max(0, 1.0 - (avg_swap_cost / max_acceptable))
+        
+        return efficiency * 20
+
+

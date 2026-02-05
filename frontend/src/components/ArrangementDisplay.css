@@ -161,6 +161,49 @@
   font-size: 0.9rem;
 }
 
+.hand-assignment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #ddd;
+}
+
+.hand-column {
+  padding: 0.75rem;
+  background-color: #f0f4ff;
+  border-radius: 4px;
+}
+
+.hand-column h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #667eea;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hand-bells {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.bell-badge.left {
+  background-color: #42a5f5;
+}
+
+.bell-badge.right {
+  background-color: #ef5350;
+}
+
+.no-hand-bells {
+  color: #aaa;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 .arrangement-actions {
   display: flex;
   gap: 1rem;
@@ -207,6 +250,71 @@
   margin: 0.5rem 0;
   color: #666;
   font-size: 0.9rem;
+}
+
+.expansion-notification {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #fff3e0;
+  border-left: 4px solid #ff9800;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.expansion-icon {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ff9800;
+  min-width: 1.5rem;
+}
+
+.expansion-content {
+  flex: 1;
+}
+
+.expansion-content h4 {
+  margin: 0 0 0.5rem 0;
+  color: #e65100;
+  font-size: 1rem;
+}
+
+.expansion-content p {
+  margin: 0 0 0.75rem 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.expansion-details {
+  margin-top: 0.5rem;
+}
+
+.expansion-details summary {
+  cursor: pointer;
+  color: #ff9800;
+  font-weight: 500;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.expansion-details summary:hover {
+  text-decoration: underline;
+}
+
+.expansion-details ul {
+  margin: 0.75rem 0 0 0;
+  padding-left: 1.5rem;
+  list-style: none;
+}
+
+.expansion-details li {
+  margin: 0.4rem 0;
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.expansion-details li strong {
+  color: #333;
 }
 
 
