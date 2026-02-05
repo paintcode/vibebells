@@ -1,6 +1,8 @@
 # Vibebells - Handbell Arrangement Generator
 
-A web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, specify the number of players, and get multiple arrangement strategies with quality scoring and sustainability recommendations.
+A web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, configure players by experience level, and get multiple arrangement strategies with quality scoring and sustainability recommendations.
+
+> **Note**: As of February 2026, the frontend has been migrated from deprecated Create React App to **Next.js 15** with App Router for better performance, maintainability, and long-term support.
 
 ## Features
 
@@ -9,22 +11,29 @@ A web application that generates handbell arrangements for songs. Upload a MIDI 
 - **Quality Scoring**: 0-100 score based on distribution, occupancy, utilization, and melody coverage
 - **Sustainability Analysis**: Bell spacing and reachability recommendations for player comfort
 - **Conflict Resolution**: Automatic deduplication and balancing of arrangements
-- **Web UI**: React-based interface with real-time feedback
+- **Web UI**: Next.js 15 with App Router, modern React 19 interface with real-time feedback
+- **Multi-Bell Support**: Players can manage up to 5 bells with hand assignment optimization
+- **Experience-Level Constraints**: Automatic player expansion when capacity is insufficient
 
 ## Project Structure
 
 ```
 vibebells/
-├── frontend/                 # React application
-│   ├── public/
-│   ├── src/
+├── frontend/                 # Next.js 15 application (App Router)
+│   ├── app/
 │   │   ├── components/
-│   │   │   ├── FileUpload.js      # Music file upload
-│   │   │   ├── PlayerConfig.js    # Player count selection
-│   │   │   └── ArrangementDisplay.js  # Results display
-│   │   ├── App.js
-│   │   ├── App.css
-│   │   └── index.js
+│   │   │   ├── FileUpload.js       # Music file upload
+│   │   │   ├── FileUpload.css
+│   │   │   ├── PlayerConfig.js     # Player configuration
+│   │   │   ├── PlayerConfig.css
+│   │   │   ├── ArrangementDisplay.js   # Results display
+│   │   │   └── ArrangementDisplay.css
+│   │   ├── layout.js         # Root layout component
+│   │   ├── page.js           # Home page component
+│   │   ├── page.css
+│   │   └── globals.css       # Global styles
+│   ├── public/
+│   ├── next.config.js
 │   ├── package.json
 │   └── .gitignore
 ├── backend/                  # Flask API
@@ -54,7 +63,7 @@ vibebells/
 
 ## Prerequisites
 
-- **Node.js** 14+ and **npm** (for frontend)
+- **Node.js** 18+ and **npm** (for frontend - Next.js 15 requires Node 18+)
 - **Python** 3.8+ (for backend)
 - MIDI or MusicXML files to arrange
 
@@ -109,11 +118,17 @@ vibebells/
    npm install
    ```
 
-3. **Start the React development server**:
+3. **Start the Next.js development server**:
    ```bash
-   npm start
+   npm run dev
    ```
    App opens at `http://localhost:3000`
+
+4. **Build for production**:
+   ```bash
+   npm run build
+   npm start
+   ```
 
 ## Running the Application
 
@@ -130,7 +145,7 @@ python run.py
 # Terminal 2: Start Frontend
 cd frontend
 npm install
-npm start
+npm run dev
 ```
 
 ### Quick Start (After Initial Setup)
@@ -143,7 +158,7 @@ python run.py
 
 # Terminal 2: Frontend
 cd frontend
-npm start
+npm run dev
 ```
 
 ## Using the Application
@@ -219,8 +234,9 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
 
 ### Bell Assignment Constraints
 
-- **Max bells per player**: 2 (hard constraint)
-- **Player count**: 1-20
+- **Max bells per player**: Dependent on experience level (experienced=5, intermediate=3, beginner=2)
+- **Simultaneous bells**: Maximum 2 per hand (hard constraint)
+- **Player count**: 1-20 (auto-expanded if insufficient capacity)
 - **File size limit**: 5MB
 - **Supported formats**: MIDI, MusicXML (.xml, .musicxml)
 
@@ -241,8 +257,23 @@ pip install -r requirements.txt --force-reinstall
 
 ### Frontend shows "Connection refused"
 - Ensure backend is running on port 5000
-- Check CORS settings in `.env` (should include frontend URL)
+- Check CORS settings in `.env` (should include `http://localhost:3000`)
 - Clear browser cache and restart frontend
+- Check browser console (F12) for network errors
+
+### Next.js dev server won't start
+```bash
+# Check Node version (need 18+)
+node --version
+
+# Clear Next.js cache
+rm -rf .next  # or: Remove-Item .next -Recurse (Windows)
+
+# Reinstall dependencies
+rm package-lock.json node_modules  # or Windows equivalent
+npm install
+npm run dev
+```
 
 ### File upload fails
 - Check file size (max 5MB)
@@ -261,8 +292,12 @@ pip install -r requirements.txt --force-reinstall
 - **Phase 1**: ✅ Core infrastructure (Flask, React, file handling)
 - **Phase 2**: ✅ Music parsing (MIDI, MusicXML)
 - **Phase 3**: ✅ Algorithm implementation (3 strategies, quality scoring, validation)
-- **Phase 4**: 🔄 Export features (PDF, player parts, sheet music)
-- **Phase 5**: 📋 Testing suite (unit, integration, end-to-end)
+- **Phase 4**: ✅ Multi-bell assignment with hand optimization
+- **Phase 5**: ✅ Hand swap optimization (minimize bell transfers)
+- **Phase 6**: ✅ Experience-level constraints and player expansion
+- **Phase 6.5**: ✅ Next.js 15 migration from deprecated Create React App
+- **Phase 7**: 🔄 Export features (PDF, player parts, sheet music)
+- **Phase 8**: 📋 Testing suite (unit, integration, end-to-end)
 
 ### Key Documentation
 
@@ -307,7 +342,7 @@ Total: 0-100 (higher is better)
 
 ## Technology Stack
 
-- **Frontend**: React, CSS Grid/Flexbox
+- **Frontend**: Next.js 15 (App Router), React 19, CSS Grid/Flexbox
 - **Backend**: Flask, Python 3.8+
 - **Music Parsing**: mido (MIDI), music21 (MusicXML)
 - **File Upload**: Multipart form data

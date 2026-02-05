@@ -1,10 +1,12 @@
+'use client';
+
 import React, { useState } from 'react';
-import './App.css';
+import './page.css';
 import FileUpload from './components/FileUpload';
 import PlayerConfig from './components/PlayerConfig';
 import ArrangementDisplay from './components/ArrangementDisplay';
 
-function App() {
+export default function Home() {
   const [file, setFile] = useState(null);
   const [players, setPlayers] = useState([
     { id: 1, name: 'Player 1', experience: 'experienced', bells: [] },
@@ -141,6 +143,3 @@ function App() {
     </div>
   );
 }
-
-export default App;
-

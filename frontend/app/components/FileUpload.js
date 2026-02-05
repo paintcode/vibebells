@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
 import './FileUpload.css';
 
-function FileUpload({ onFileUpload }) {
+export default function FileUpload({ onFileUpload }) {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -29,5 +31,3 @@ function FileUpload({ onFileUpload }) {
     </div>
   );
 }
-
-export default FileUpload;

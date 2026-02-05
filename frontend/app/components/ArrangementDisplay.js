@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useState } from 'react';
 import './ArrangementDisplay.css';
 
-function ArrangementDisplay({ arrangements, expansionInfo }) {
+export default function ArrangementDisplay({ arrangements, expansionInfo }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
 
   if (!arrangements || arrangements.length === 0) {
@@ -161,6 +163,4 @@ function ArrangementDisplay({ arrangements, expansionInfo }) {
     </div>
   );
 }
-
-export default ArrangementDisplay;
 
