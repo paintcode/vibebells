@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import './ArrangementDisplay.css';
 
-export default function ArrangementDisplay({ arrangements, expansionInfo }) {
+export default function ArrangementDisplay({ arrangements, expansionInfo, uploadedFilename, players }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   if (!arrangements || arrangements.length === 0) {
     return <p>No arrangements generated</p>;
@@ -16,6 +17,63 @@ export default function ArrangementDisplay({ arrangements, expansionInfo }) {
     if (score >= 80) return '#4caf50';
     if (score >= 60) return '#ff9800';
     return '#f44336';
+  };
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    let objectUrl = null;
+    try {
+      const response = await fetch('http://localhost:5000/api/export-csv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          arrangement: current.assignments,
+          players: players || [],
+          filename: uploadedFilename || 'arrangement',
+          strategy: current.strategy || current.description || 'unknown',
+          swaps: current.swaps || {}  // Pass calculated swap counts
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Export failed: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          // If response isn't JSON, use status text
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Generate filename client-side
+      const baseFilename = uploadedFilename ? uploadedFilename.replace(/\.[^/.]+$/, '') : 'arrangement';
+      const strategy = (current.strategy || current.description || 'unknown').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `${baseFilename}_${strategy}.csv`;
+
+      // Download the CSV file
+      const blob = await response.blob();
+      objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export arrangement: ' + error.message);
+    } finally {
+      setExporting(false);
+      // Clean up object URL
+      if (objectUrl) {
+        window.URL.revokeObjectURL(objectUrl);
+      }
+    }
   };
 
   return (
@@ -40,21 +98,35 @@ export default function ArrangementDisplay({ arrangements, expansionInfo }) {
       )}
 
       <div className="arrangement-info">
-        <p>
-          <strong>Strategy:</strong> {current.description || current.strategy}
-        </p>
-        <div className="quality-score">
-          <span className="score-label">Quality Score:</span>
-          <div className="score-bar">
-            <div 
-              className="score-fill" 
-              style={{ 
-                width: `${current.quality_score}%`,
-                backgroundColor: getScoreColor(current.quality_score)
-              }}
-            />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p>
+              <strong>Strategy:</strong> {current.description || current.strategy}
+            </p>
+            <div className="quality-score">
+              <span className="score-label">Quality Score:</span>
+              <div className="score-bar">
+                <div 
+                  className="score-fill" 
+                  style={{ 
+                    width: `${current.quality_score}%`,
+                    backgroundColor: getScoreColor(current.quality_score)
+                  }}
+                />
+              </div>
+              <span className="score-value">{Math.round(current.quality_score)}/100</span>
+            </div>
           </div>
-          <span className="score-value">{Math.round(current.quality_score)}/100</span>
+          {current && current.assignments && (
+            <button 
+              className="export-btn" 
+              onClick={handleExportCSV}
+              disabled={exporting}
+              title="Export arrangement as CSV spreadsheet"
+            >
+              {exporting ? 'Exporting...' : 'Export CSV'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -154,11 +226,6 @@ export default function ArrangementDisplay({ arrangements, expansionInfo }) {
             </div>
           );
         })}
-      </div>
-
-      <div className="arrangement-actions">
-        <button className="export-btn">Download as PDF</button>
-        <button className="export-btn">Download Player Parts</button>
       </div>
     </div>
   );
