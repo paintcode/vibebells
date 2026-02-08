@@ -7,17 +7,26 @@ contextBridge.exposeInMainWorld('electron', {
   openFileDialog: () => ipcRenderer.invoke('dialog:openFile'),
   saveFileDialog: (defaultName) => ipcRenderer.invoke('dialog:saveFile', defaultName),
   
+  // File system operations
+  readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+  
   // App info
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   
   // Check if running in Electron
   isElectron: true,
   
-  // Menu event listeners
+  // Menu event listeners with cleanup support
   onMenuOpenFile: (callback) => {
-    ipcRenderer.on('menu-open-file', callback);
+    const handler = () => callback();
+    ipcRenderer.on('menu-open-file', handler);
+    // Return cleanup function
+    return () => ipcRenderer.removeListener('menu-open-file', handler);
   },
   onMenuExportCSV: (callback) => {
-    ipcRenderer.on('menu-export-csv', callback);
+    const handler = () => callback();
+    ipcRenderer.on('menu-export-csv', handler);
+    // Return cleanup function
+    return () => ipcRenderer.removeListener('menu-export-csv', handler);
   }
 });

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ArrangementDisplay.css';
+import { isElectron, saveFileDialog, onMenuExportCSV } from '../lib/electron';
 
 export default function ArrangementDisplay({ arrangements, expansionInfo, uploadedFilename, players }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
@@ -75,6 +76,121 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
       }
     }
   };
+
+  // Commented out conflicting client-side export logic that was previously registered with Electron menu
+  // const handleExportCSV = useCallback(async () => {
+  //   try {
+  //     const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+  //     const defaultFilename = `arrangement_${timestamp}.csv`;
+      
+  //     let filepath = null;
+  //     if (isElectron()) {
+  //       // Use native save dialog in Electron
+  //       filepath = await saveFileDialog(defaultFilename);
+  //       if (!filepath) return; // User cancelled
+  //     }
+
+  //     // Generate CSV content
+  //     const csvContent = generateCSV(current, uploadedFilename, players);
+
+  //     if (isElectron() && filepath) {
+  //       // In Electron, write to the selected file
+  //       // For now, we'll use the browser download method
+  //       // TODO: Implement native file write using Electron IPC
+  //       downloadCSV(csvContent, filepath.split(/[\\/]/).pop());
+  //     } else {
+  //       // Browser download
+  //       downloadCSV(csvContent, defaultFilename);
+  //     }
+  //   } catch (error) {
+  //     console.error('Export failed:', error);
+  //     alert('Failed to export CSV: ' + error.message);
+  //   }
+  // }, [current, uploadedFilename, players, selectedArrangement]);
+
+  // Register menu event listener for Electron
+  useEffect(() => {
+    if (isElectron()) {
+      const cleanup = onMenuExportCSV(handleExportCSV);
+      // Cleanup listener on unmount
+      return cleanup;
+    }
+  }, [handleExportCSV]);
+
+  // Commented out client-side CSV generation logic that conflicts with server-side export endpoint
+  // const generateCSV = (arrangement, filename, playersList) => {
+  //   let csv = 'Metadata\n';
+  //   csv += `Uploaded File,${escapeCSVField(filename || 'unknown')}\n`;
+  //   csv += `Strategy,${escapeCSVField(arrangement.strategy)}\n`;
+  //   csv += `Generated,${new Date().toISOString()}\n`;
+  //   csv += '\n';
+    
+  //   csv += 'Players\n';
+  //   csv += 'Player,Experience,Left Hand,Right Hand,Bell Swaps\n';
+    
+  //   arrangement.players.forEach(player => {
+  //     const leftHand = player.left_hand ? player.left_hand.join(' ') : '';
+  //     const rightHand = player.right_hand ? player.right_hand.join(' ') : '';
+  //     const swaps = player.swaps !== undefined ? player.swaps : 0;
+  //     csv += `${escapeCSVField(player.name)},${escapeCSVField(player.experience)},${escapeCSVField(leftHand)},${escapeCSVField(rightHand)},${swaps}\n`;
+  //   });
+    
+  //   csv += '\n';
+  //   csv += 'All Bells (sorted by pitch)\n';
+    
+  //   const allBells = new Set();
+  //   arrangement.players.forEach(player => {
+  //     if (player.left_hand) player.left_hand.forEach(bell => allBells.add(bell));
+  //     if (player.right_hand) player.right_hand.forEach(bell => allBells.add(bell));
+  //   });
+    
+  //   const sortedBells = Array.from(allBells).sort((a, b) => {
+  //     return compareBellPitch(a, b);
+  //   });
+    
+  //   sortedBells.forEach(bell => {
+  //     csv += bell + '\n';
+  //   });
+    
+  //   return csv;
+  // };
+
+  // Commented out function used for sorting bells by pitch in client-side CSV generation, which is no longer needed with server-side export
+  // const compareBellPitch = (a, b) => {
+  //   // Simple pitch comparison (note + octave)
+  //   const noteOrder = { 'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11 };
+    
+  //   const parseNote = (bell) => {
+  //     const match = bell.match(/([A-G][#b]?)(\d+)/);
+  //     if (!match) return { note: 0, octave: 4 };
+  //     let note = noteOrder[match[1][0]] || 0;
+  //     if (match[1].includes('#')) note += 0.5;
+  //     if (match[1].includes('b')) note -= 0.5;
+  //     return { note, octave: parseInt(match[2]) };
+  //   };
+    
+  //   const noteA = parseNote(a);
+  //   const noteB = parseNote(b);
+    
+  //   if (noteA.octave !== noteB.octave) {
+  //     return noteA.octave - noteB.octave;
+  //   }
+  //   return noteA.note - noteB.note;
+  // };
+
+  // Commented out client-side CSV download logic that conflicts with server-side export endpoint
+  // const downloadCSV = (content, filename) => {
+  //   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  //   const link = document.createElement('a');
+  //   const url = URL.createObjectURL(blob);
+  //   link.setAttribute('href', url);
+  //   link.setAttribute('download', filename);
+  //   link.style.visibility = 'hidden';
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  //   URL.revokeObjectURL(url);
+  // };
 
   return (
     <div className="arrangement-display">

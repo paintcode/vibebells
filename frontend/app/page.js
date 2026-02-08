@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './page.css';
 import FileUpload from './components/FileUpload';
 import PlayerConfig from './components/PlayerConfig';
 import ArrangementDisplay from './components/ArrangementDisplay';
+import { isElectron, openFileDialog, onMenuOpenFile, readFile } from './lib/electron';
 
 export default function Home() {
   const [file, setFile] = useState(null);
@@ -17,6 +18,42 @@ export default function Home() {
   const [expansionInfo, setExpansionInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Register menu event listener for Electron
+  useEffect(() => {
+    if (isElectron()) {
+      const cleanup = onMenuOpenFile(() => {
+        handleElectronFileOpen();
+      });
+      // Cleanup listener on unmount
+      return cleanup;
+    }
+  }, []);
+
+  // Handle Electron native file dialog
+  const handleElectronFileOpen = async () => {
+    try {
+      const filePath = await openFileDialog();
+      if (filePath) {
+        // Read file through IPC (secure file access)
+        const result = await readFile(filePath);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to read file');
+        }
+        
+        // Convert array back to Uint8Array and create blob
+        const fileName = filePath.split(/[\\/]/).pop();
+        const blob = new Blob([new Uint8Array(result.data)], { type: 'audio/midi' });
+        const file = new File([blob], fileName, { type: 'audio/midi' });
+        handleFileUpload(file);
+      }
+    } catch (error) {
+      console.error('Error opening file from Electron dialog:', error);
+      setError('Failed to open file: ' + error.message);
+    }
+  };
 
   const handleFileUpload = async (uploadedFile) => {
     setFile(uploadedFile);
@@ -113,6 +150,14 @@ export default function Home() {
 
           <section className="section">
             <h2>1. Upload Music File</h2>
+            {isElectron() && (
+              <button 
+                className="electron-file-btn"
+                onClick={handleElectronFileOpen}
+              >
+                Choose File...
+              </button>
+            )}
             <FileUpload onFileUpload={handleFileUpload} />
             {file && <p className="file-name">Selected: {file.name}</p>}
           </section>

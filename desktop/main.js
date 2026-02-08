@@ -385,6 +385,25 @@ ipcMain.handle('dialog:openFile', async () => {
   return null;
 });
 
+// File system operations
+ipcMain.handle('fs:readFile', async (event, filePath) => {
+  try {
+    // Validate path before reading
+    if (!isValidFilePath(filePath)) {
+      log.error('Rejected invalid file path for reading:', filePath);
+      return { success: false, error: 'Invalid file path' };
+    }
+    
+    // Read file as buffer
+    const data = await fs.promises.readFile(filePath);
+    // Convert to array for JSON serialization
+    return { success: true, data: Array.from(data) };
+  } catch (error) {
+    log.error('Error reading file:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('dialog:saveFile', async (event, defaultName) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultName,
