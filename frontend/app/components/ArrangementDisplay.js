@@ -50,13 +50,10 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
         throw new Error(errorMessage);
       }
 
-      // Get the filename from response
-      const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'arrangement.csv';
-      if (contentDisposition) {
-        const match = contentDisposition.match(/filename="?([^"]+)"?/);
-        if (match) filename = match[1];
-      }
+      // Generate filename client-side
+      const baseFilename = uploadedFilename ? uploadedFilename.replace(/\.[^/.]+$/, '') : 'arrangement';
+      const strategy = (current.strategy || current.description || 'unknown').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `${baseFilename}_${strategy}.csv`;
 
       // Download the CSV file
       const blob = await response.blob();

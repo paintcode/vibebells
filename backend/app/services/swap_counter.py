@@ -46,7 +46,6 @@ class SwapCounter:
             return swap_counts
         
         # Convert note names to pitches for matching
-        note_to_pitch = {}
         from app.services.music_parser import MusicParser
         
         for player_name, player_data in assignment.items():
@@ -65,8 +64,8 @@ class SwapCounter:
                 try:
                     pitch = MusicParser.note_name_to_pitch(bell_name)
                     bell_pitches.add(pitch)
-                except:
-                    logger.warning(f"Could not convert bell name {bell_name} to pitch")
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"Could not convert bell name {bell_name} to pitch: {e}")
             
             # Get notes played by this player, in chronological order
             player_notes = [n for n in all_notes if n.get('pitch') in bell_pitches]
@@ -82,14 +81,14 @@ class SwapCounter:
                 try:
                     pitch = MusicParser.note_name_to_pitch(bell_name)
                     hand_map[pitch] = 'left'
-                except:
-                    pass
+                except (ValueError, KeyError) as e:
+                    logger.debug(f"Could not convert left hand bell name {bell_name} to pitch: {e}")
             for bell_name in right_hand:
                 try:
                     pitch = MusicParser.note_name_to_pitch(bell_name)
                     hand_map[pitch] = 'right'
-                except:
-                    pass
+                except (ValueError, KeyError) as e:
+                    logger.debug(f"Could not convert right hand bell name {bell_name} to pitch: {e}")
             
             # Count swaps: when player needs to switch which bell they're holding
             swaps = SwapCounter._count_swaps_for_player(player_notes, hand_map)
@@ -103,24 +102,19 @@ class SwapCounter:
         Count swaps for a single player based on their actual note sequence.
         
         Algorithm:
-        1. Player starts with 2 bells held (first 2 unique pitches)
+        1. Player starts with 2 bells held (one per hand, based on hand_map)
         2. For each note in sequence:
            - If holding it: play it
-           - If not holding it: drop the bell needed furthest in future, pick up needed bell (1 swap)
-        3. Look ahead to determine which bell to drop (greedy algorithm: drop bell with furthest next appearance)
+           - If not holding it: swap the bell in the required hand (1 swap)
+        3. Only swap within the hand that is assigned to play the required bell
         
-        Example: A-B-C-B-A
+        Example: A-B-C-B-A where A is left hand, B is right hand, C is left hand
         - Start: holding A (left), B (right)
-        - Note A: already holding, play
-        - Note B: already holding, play
-        - Note C: not holding, look ahead:
-          - A next appears at position 4
-          - B next appears at position 3
-          - Drop A (needed at 4, which is further), pick up C (1 swap)
-        - Note B: already holding, play
-        - Note A: not holding, look ahead:
-          - B next appears: never (no more notes)
-          - Drop B, pick up A (1 swap)
+        - Note A: already holding in left, play
+        - Note B: already holding in right, play
+        - Note C: not holding, but assigned to left hand, swap A for C in left (1 swap)
+        - Note B: already holding in right, play
+        - Note A: not holding, but assigned to left hand, swap C for A in left (1 swap)
         - Total: 2 swaps
         
         Args:
@@ -148,35 +142,35 @@ class SwapCounter:
             # Can hold 2 bells (1 per hand), no swaps needed
             return 0
         
-        # Initialize: player holds first 2 unique pitches
-        holding = set(unique_pitches[:2])
+        # Initialize: player holds first unique pitch for each hand
+        holding_left = None
+        holding_right = None
+        for pitch in unique_pitches:
+            hand = hand_map.get(pitch, 'left')  # Default to left if not specified
+            if hand == 'left' and holding_left is None:
+                holding_left = pitch
+            elif hand == 'right' and holding_right is None:
+                holding_right = pitch
+            
+            # Stop once we have one pitch for each hand
+            if holding_left is not None and holding_right is not None:
+                break
+        
         swaps = 0
         
         # Process each note in the sequence
-        for i, pitch in enumerate(pitches):
-            if pitch not in holding:
-                # Need to swap: figure out which bell to drop
-                # Drop the bell that's needed furthest in the future
-                
-                # Find next occurrence of each bell we're currently holding
-                next_positions = {}
-                for held_pitch in holding:
-                    next_pos = None
-                    for j in range(i + 1, len(pitches)):
-                        if pitches[j] == held_pitch:
-                            next_pos = j
-                            break
-                    next_positions[held_pitch] = next_pos
-                
-                # Drop the bell with furthest next appearance (or never appears again)
-                # Sort by: None (never appears) first, then by position (furthest first)
-                held_list = list(holding)
-                held_list.sort(key=lambda p: (next_positions[p] is not None, -next_positions[p] if next_positions[p] is not None else -1))
-                
-                bell_to_drop = held_list[0]  # First in sorted list (furthest away or never needed)
-                
-                holding.remove(bell_to_drop)
-                holding.add(pitch)
-                swaps += 1
+        for pitch in pitches:
+            required_hand = hand_map.get(pitch, 'left')  # Default to left if not specified
+            
+            if required_hand == 'left':
+                if holding_left != pitch:
+                    # Need to swap in left hand
+                    holding_left = pitch
+                    swaps += 1
+            else:  # right hand
+                if holding_right != pitch:
+                    # Need to swap in right hand
+                    holding_right = pitch
+                    swaps += 1
         
         return swaps

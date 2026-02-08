@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, current_app, send_file
+from werkzeug.exceptions import BadRequest
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -171,7 +172,10 @@ def export_csv():
     """Export arrangement as CSV file"""
     try:
         # Get arrangement data from request
-        data = request.get_json()
+        try:
+            data = request.get_json()
+        except BadRequest:
+            raise APIError('Invalid JSON in request body', 'ERR_INVALID_JSON', 400)
         
         if not data:
             raise APIError('No arrangement data provided', 'ERR_NO_DATA', 400)
@@ -185,8 +189,14 @@ def export_csv():
         if not arrangement:
             raise APIError('No arrangement data provided', 'ERR_NO_DATA', 400)
         
-        # Validate players have required fields
+        # Validate players is a list
+        if not isinstance(players, list):
+            raise APIError('Players must be an array', 'ERR_INVALID_PLAYERS', 400)
+        
+        # Validate each player object
         for player in players:
+            if not isinstance(player, dict):
+                raise APIError('Each player must be an object', 'ERR_INVALID_PLAYER_FORMAT', 400)
             if 'name' not in player:
                 raise APIError('Each player must have a name', 'ERR_PLAYER_NO_NAME', 400)
             if 'experience' not in player:

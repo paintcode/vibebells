@@ -22,7 +22,7 @@ OK
 
 ## Test Coverage
 
-### SwapCounter Tests (13 tests)
+### SwapCounter Tests (10 tests)
 
 #### Edge Cases
 - ✅ `test_no_notes` - Empty note list returns 0 swaps
@@ -50,7 +50,7 @@ OK
 - ✅ `test_complex_sequence` - A-B-C-A-B-C-A-B-C with 3 bells
   - Tests algorithm on repeating pattern
 
-### ExportFormatter Tests (11 tests)
+### ExportFormatter Tests (12 tests)
 
 #### CSV Structure
 - ✅ `test_csv_structure_has_sections` - Has Metadata, Players, and Bells sections

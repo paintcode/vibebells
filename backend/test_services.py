@@ -5,7 +5,6 @@ Unit tests for SwapCounter and ExportFormatter
 import unittest
 from io import StringIO
 import csv
-from datetime import datetime
 
 # Test imports
 import sys
@@ -168,7 +167,6 @@ class TestExportFormatter(unittest.TestCase):
             'balanced'
         )
         
-        lines = csv_content.strip().split('\n')
         self.assertIn('Metadata', csv_content)
         self.assertIn('Players', csv_content)
         self.assertIn('All Bells', csv_content)
