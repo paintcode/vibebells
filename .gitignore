@@ -8,7 +8,7 @@ backend/venv/
 backend/.venv/
 
 # Frontend
-frontend/node_modules/
+**/node_modules/
 frontend/build/
 frontend/.env.local
 frontend/.env.development.local
