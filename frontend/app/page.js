@@ -135,7 +135,12 @@ export default function Home() {
           {arrangements && (
             <section className="section">
               <h2>3. Arrangements</h2>
-              <ArrangementDisplay arrangements={arrangements} expansionInfo={expansionInfo} />
+              <ArrangementDisplay 
+                arrangements={arrangements} 
+                expansionInfo={expansionInfo}
+                uploadedFilename={file?.name}
+                players={players}
+              />
             </section>
           )}
         </div>

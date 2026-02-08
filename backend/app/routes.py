@@ -1,11 +1,14 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_file
 from werkzeug.utils import secure_filename
 import os
 import json
 import logging
+from io import BytesIO
+from datetime import datetime
 from app.services.file_handler import FileHandler
 from app.services.music_parser import MusicParser
 from app.services.arrangement_generator import ArrangementGenerator
+from app.services.export_formatter import ExportFormatter
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -162,4 +165,55 @@ def internal_error(error):
         'error': 'Internal server error',
         'code': 'ERR_INTERNAL'
     }), 500
+
+@api_bp.route('/export-csv', methods=['POST'])
+def export_csv():
+    """Export arrangement as CSV file"""
+    try:
+        # Get arrangement data from request
+        data = request.get_json()
+        
+        if not data:
+            raise APIError('No arrangement data provided', 'ERR_NO_DATA', 400)
+        
+        arrangement = data.get('arrangement')
+        players = data.get('players', [])
+        filename = data.get('filename', 'arrangement')
+        strategy = data.get('strategy', 'unknown')
+        swap_counts = data.get('swaps')  # May be None if not provided
+        
+        if not arrangement:
+            raise APIError('No arrangement data provided', 'ERR_NO_DATA', 400)
+        
+        # Validate players have required fields
+        for player in players:
+            if 'name' not in player:
+                raise APIError('Each player must have a name', 'ERR_PLAYER_NO_NAME', 400)
+            if 'experience' not in player:
+                raise APIError('Each player must have an experience level', 'ERR_PLAYER_NO_EXPERIENCE', 400)
+        
+        # Format arrangement as CSV (pass swap_counts if available)
+        csv_content = ExportFormatter.format_to_csv(arrangement, players, filename, strategy, swap_counts)
+        
+        # Create response with CSV file
+        csv_bytes = csv_content.encode('utf-8')
+        
+        # Generate unique filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        clean_filename = ''.join(c if c.isalnum() else '_' for c in filename.split('.')[0])
+        download_name = f"arrangement_{clean_filename}_{timestamp}.csv"
+        
+        return send_file(
+            BytesIO(csv_bytes),
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name=download_name
+        )
+    
+    except APIError as e:
+        logger.error(f"CSV export error: {e.message}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in CSV export: {str(e)}", exc_info=True)
+        raise APIError('Failed to export arrangement', 'ERR_EXPORT_FAILED', 500)
 

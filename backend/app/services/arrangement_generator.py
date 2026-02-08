@@ -2,6 +2,7 @@ from app.services.bell_assignment import BellAssignmentAlgorithm
 from app.services.music_parser import MusicParser
 from app.services.conflict_resolver import ConflictResolver
 from app.services.arrangement_validator import ArrangementValidator
+from app.services.swap_counter import SwapCounter
 from flask import current_app
 import logging
 
@@ -106,10 +107,14 @@ class ArrangementGenerator:
                 sustainability = ArrangementValidator.sustainability_check(assignment, music_data)
                 quality_score = ArrangementValidator.calculate_quality_score(assignment, music_data)
                 
+                # Calculate actual swaps for each player based on note sequence
+                swap_counts = SwapCounter.calculate_swaps_for_arrangement(assignment, music_data)
+                
                 arrangements.append({
                     'strategy': strategy,
                     'description': description,
                     'assignments': assignment,
+                    'swaps': swap_counts,  # New: actual swap counts per player
                     'validation': validation,
                     'sustainability': sustainability,
                     'quality_score': quality_score,
