@@ -61,7 +61,7 @@ function startBackend() {
       const pythonExe = path.join(
         process.resourcesPath,
         'backend',
-        process.platform === 'win32' ? 'run.exe' : 'run'
+        process.platform === 'win32' ? 'vibebells-backend.exe' : 'vibebells-backend'
       );
       
       // Validate backend executable exists and is accessible
