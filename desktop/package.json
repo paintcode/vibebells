@@ -43,7 +43,8 @@
         "from": "../backend/dist/",
         "to": "backend/",
         "filter": [
-          "**/*"
+          "vibebells-backend.exe",
+          "vibebells-backend"
         ]
       }
     ],

@@ -1,42 +1,26 @@
 @echo off
 REM Build script for Vibebells Desktop (Windows)
 
-echo ========================================
+echo ============================================
 echo Building Vibebells Desktop Application
-echo ========================================
+echo ============================================
 
 echo.
-echo Step 1: Building Next.js frontend...
-cd frontend
-set BUILD_ELECTRON=true
-call npm run build
-if errorlevel 1 (
-    echo ERROR: Frontend build failed
-    exit /b 1
-)
-
-echo.
-echo Step 2: Copying frontend build to desktop...
-xcopy /E /I /Y out ..\desktop\build
-if errorlevel 1 (
-    echo ERROR: Failed to copy frontend build
-    exit /b 1
-)
-cd ..
-
-echo.
-echo Step 3: Building Python backend (requires PyInstaller)...
+echo [1/4] Building Python Backend...
 cd backend
 
-REM Check if pip is available
-pip --version >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: pip not found. Please install Python with pip.
+REM Check if virtual environment exists
+if not exist "venv\Scripts\activate.bat" (
+    echo ERROR: Python virtual environment not found at backend\venv\
+    echo Please run: cd backend ^&^& python -m venv venv ^&^& venv\Scripts\activate ^&^& pip install -r requirements.txt
     cd ..
     exit /b 1
 )
 
-REM Check and install PyInstaller
+REM Activate virtual environment
+call venv\Scripts\activate.bat
+
+REM Check PyInstaller
 pip show pyinstaller >nul 2>&1
 if errorlevel 1 (
     echo Installing PyInstaller...
@@ -46,48 +30,86 @@ if errorlevel 1 (
         cd ..
         exit /b 1
     )
-    echo PyInstaller installed successfully
 )
 
-REM Verify required packages are installed
-echo Checking backend dependencies...
-pip show flask >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: Flask not installed. Run: pip install -r requirements.txt
-    cd ..
-    exit /b 1
-)
-
-pip show mido >nul 2>&1
-if errorlevel 1 (
-    echo ERROR: mido not installed. Run: pip install -r requirements.txt
-    cd ..
-    exit /b 1
-)
-
-REM Create simple spec for PyInstaller
-echo Creating PyInstaller executable...
-pyinstaller --name=run --onefile --hidden-import=flask --hidden-import=flask_cors --hidden-import=mido --hidden-import=music21 --hidden-import=werkzeug.security --add-data "app;app" -c run.py
+REM Build with spec file
+echo Building backend with PyInstaller...
+pyinstaller run.spec --clean
 if errorlevel 1 (
     echo ERROR: Backend build failed
     cd ..
     exit /b 1
 )
 
-REM Verify output exists
-if not exist "dist\run.exe" (
+REM Verify output
+if not exist "dist\vibebells-backend.exe" (
     echo ERROR: Backend executable not created
     cd ..
     exit /b 1
 )
 
-echo Backend built successfully: dist\run.exe
+echo ✓ Backend bundled: dist\vibebells-backend.exe
+for %%F in (dist\vibebells-backend.exe) do echo    Size: %%~zF bytes
 cd ..
 
 echo.
-echo Step 4: Ready to package with Electron Builder
-echo Run: cd desktop ^&^& npm run build
+echo [2/4] Building Next.js Frontend...
+cd frontend
+set BUILD_ELECTRON=true
+call npm run build
+if errorlevel 1 (
+    echo ERROR: Frontend build failed
+    cd ..
+    exit /b 1
+)
+
+if not exist "out\index.html" (
+    echo ERROR: Frontend build output not found
+    cd ..
+    exit /b 1
+)
+
+echo ✓ Frontend built: out\
+cd ..
+
 echo.
-echo ========================================
-echo Build preparation complete!
-echo ========================================
+echo [3/4] Copying to Desktop App...
+cd desktop
+if not exist "build" mkdir build
+xcopy /E /I /Y ..\frontend\out build
+if errorlevel 1 (
+    echo ERROR: Failed to copy frontend build
+    cd ..
+    exit /b 1
+)
+echo ✓ Frontend copied to desktop\build\
+
+echo.
+echo [4/4] Building Electron App...
+call npm run build:win
+if errorlevel 1 (
+    echo ERROR: Electron build failed
+    cd ..
+    exit /b 1
+)
+
+REM Verify Electron output
+if not exist "dist\*.exe" (
+    echo ERROR: Electron installer not created
+    cd ..
+    exit /b 1
+)
+
+echo ✓ Electron app built: desktop\dist\
+cd ..
+
+echo.
+echo ============================================
+echo Build Complete! 🎉
+echo ============================================
+echo.
+echo Outputs:
+for %%F in (desktop\dist\*.exe) do echo   - %%~nxF (%%~zF bytes)
+echo.
+echo To test: Run the installer or portable EXE from desktop\dist\
+echo.
