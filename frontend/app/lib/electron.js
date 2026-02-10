@@ -58,12 +58,15 @@ export const readFile = async (filePath) => {
  * Get the Electron application version
  * @returns {Promise<string|null>} App version or null if not in Electron
  */
-export const getAppVersion = async () => {
+export const getVersion = async () => {
   if (isElectron()) {
     return await window.electron.getVersion();
   }
   return null;
 };
+
+// Backwards-compatible alias for existing callers
+export const getAppVersion = getVersion;
 
 /**
  * Register callback for File > Open menu event

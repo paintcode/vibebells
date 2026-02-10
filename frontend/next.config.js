@@ -3,8 +3,8 @@ const nextConfig = {
   reactStrictMode: true,
   // Static export for Electron
   output: process.env.BUILD_ELECTRON === 'true' ? 'export' : undefined,
-  // Configure trailing slash behavior
-  trailingSlash: true,
+  // Configure trailing slash behavior (only for Electron builds)
+  trailingSlash: process.env.BUILD_ELECTRON === 'true' ? true : false,
   // Disable image optimization for static export
   images: {
     unoptimized: process.env.BUILD_ELECTRON === 'true' ? true : false,
