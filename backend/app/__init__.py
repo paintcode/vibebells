@@ -10,7 +10,7 @@ def create_app(config_name='development'):
     # Enable CORS with proper configuration
     CORS(app, 
          resources={r"/api/*": {
-             "origins": ["http://localhost:3000", "http://localhost:5000"],
+             "origins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:5000"],
              "methods": ["GET", "POST", "OPTIONS"],
              "allow_headers": ["Content-Type"],
              "supports_credentials": True
