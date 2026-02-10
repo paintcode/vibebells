@@ -18,7 +18,8 @@ let frontendServer = null;
 const isDev = process.env.NODE_ENV === 'development';
 
 // Configuration constants
-const BACKEND_PORT = process.env.BACKEND_PORT || 5000;
+// Backend is hardcoded to port 5000 (see backend/run.py)
+const BACKEND_PORT = 5000;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
 const FRONTEND_PORT = 3001; // Use different port from backend
 const HEALTH_CHECK_DELAY_MS = 2000;
@@ -215,7 +216,9 @@ function startFrontendServer() {
       filePath = path.normalize(filePath);
       
       // Security check: ensure file is within build directory
-      if (!filePath.startsWith(buildPath)) {
+      // Use path.relative to check if the file is within buildPath
+      const relativePath = path.relative(buildPath, filePath);
+      if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
         res.writeHead(403);
         res.end('Forbidden');
         return;
@@ -388,8 +391,13 @@ async function createWindow() {
     
     if (choice === 0) {
       // User chose Retry
+      // Ensure the existing window is destroyed before recreating
+      if (mainWindow) {
+        mainWindow.destroy();
+        mainWindow = null;
+      }
       log.info('Retrying backend startup...');
-      return createWindow(); // Recursive retry
+      return createWindow(); // Retry initialization
     } else {
       // User chose Quit
       app.quit();
