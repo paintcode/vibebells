@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, protocol } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const log = require('electron-log');
+const http = require('http');
+const { readFile } = require('fs/promises');
 
 // Configure logging
 log.transports.file.level = 'info';
@@ -11,12 +13,14 @@ log.info('Application starting...');
 
 let mainWindow = null;
 let pythonProcess = null;
+let frontendServer = null;
 
 const isDev = process.env.NODE_ENV === 'development';
 
 // Configuration constants
 const BACKEND_PORT = process.env.BACKEND_PORT || 5000;
 const BACKEND_URL = `http://localhost:${BACKEND_PORT}`;
+const FRONTEND_PORT = 3001; // Use different port from backend
 const HEALTH_CHECK_DELAY_MS = 2000;
 const HEALTH_CHECK_INTERVAL_MS = 1000;
 const MAX_HEALTH_CHECK_ATTEMPTS = 30;
@@ -181,6 +185,88 @@ function stopBackend() {
   }
 }
 
+// Start frontend server for production
+function startFrontendServer() {
+  return new Promise((resolve, reject) => {
+    const buildPath = path.join(__dirname, 'build');
+    
+    if (!fs.existsSync(buildPath)) {
+      reject(new Error(`Frontend build not found at ${buildPath}`));
+      return;
+    }
+    
+    const mimeTypes = {
+      '.html': 'text/html',
+      '.js': 'text/javascript',
+      '.css': 'text/css',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+      '.txt': 'text/plain'
+    };
+    
+    frontendServer = http.createServer(async (req, res) => {
+      let filePath = path.join(buildPath, req.url === '/' ? 'index.html' : req.url);
+      
+      // Normalize path
+      filePath = path.normalize(filePath);
+      
+      // Security check: ensure file is within build directory
+      if (!filePath.startsWith(buildPath)) {
+        res.writeHead(403);
+        res.end('Forbidden');
+        return;
+      }
+      
+      try {
+        const ext = path.extname(filePath);
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        
+        const content = await readFile(filePath);
+        res.writeHead(200, { 'Content-Type': contentType });
+        res.end(content);
+      } catch (error) {
+        if (error.code === 'ENOENT') {
+          // File not found, try serving index.html for client-side routing
+          try {
+            const content = await readFile(path.join(buildPath, 'index.html'));
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(content);
+          } catch {
+            res.writeHead(404);
+            res.end('Not found');
+          }
+        } else {
+          res.writeHead(500);
+          res.end('Server error');
+        }
+      }
+    });
+    
+    frontendServer.on('error', (error) => {
+      log.error('Frontend server error:', error);
+      reject(error);
+    });
+    
+    frontendServer.listen(FRONTEND_PORT, 'localhost', () => {
+      log.info(`Frontend server listening on http://localhost:${FRONTEND_PORT}`);
+      resolve();
+    });
+  });
+}
+
+// Stop frontend server
+function stopFrontendServer() {
+  if (frontendServer) {
+    log.info('Stopping frontend server...');
+    frontendServer.close();
+    frontendServer = null;
+  }
+}
+
 // Create main window
 async function createWindow() {
   // Check if icon exists to avoid warning
@@ -341,22 +427,21 @@ async function createWindow() {
       }
     }
   } else {
-    // Production: Load from Next.js static build
-    const indexPath = path.join(__dirname, 'build', 'index.html');
-    
-    if (!fs.existsSync(indexPath)) {
-      const errorMsg = `Frontend build not found at ${indexPath}. Run build script first.`;
-      log.error(errorMsg);
-      dialog.showErrorBox('Build Error', errorMsg);
+    // Production: Start frontend server and load from it
+    try {
+      await startFrontendServer();
+      mainWindow.loadURL(`http://localhost:${FRONTEND_PORT}`);
+    } catch (error) {
+      log.error('Failed to start frontend server:', error);
+      dialog.showErrorBox('Frontend Error', `Failed to start frontend server: ${error.message}`);
       app.quit();
       return;
     }
-    
-    mainWindow.loadFile(indexPath);
   }
 
   mainWindow.on('closed', () => {
     stopBackend(); // Explicitly stop backend on window close
+    stopFrontendServer(); // Stop frontend server
     mainWindow = null;
   });
 }
@@ -436,6 +521,7 @@ app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   stopBackend();
+  stopFrontendServer();
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -449,8 +535,10 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   stopBackend();
+  stopFrontendServer();
 });
 
 app.on('will-quit', () => {
   stopBackend();
+  stopFrontendServer();
 });
