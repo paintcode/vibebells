@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ArrangementDisplay.css';
+import { isElectron, onMenuExportCSV } from '../lib/electron';
 
 export default function ArrangementDisplay({ arrangements, expansionInfo, uploadedFilename, players }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
@@ -19,7 +20,7 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
     return '#f44336';
   };
 
-  const handleExportCSV = async () => {
+  const handleExportCSV = useCallback(async () => {
     setExporting(true);
     let objectUrl = null;
     try {
@@ -33,7 +34,7 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
           players: players || [],
           filename: uploadedFilename || 'arrangement',
           strategy: current.strategy || current.description || 'unknown',
-          swaps: current.swaps || {}  // Pass calculated swap counts
+          swaps: current.swaps || {}
         })
       });
 
@@ -69,12 +70,19 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
       alert('Failed to export arrangement: ' + error.message);
     } finally {
       setExporting(false);
-      // Clean up object URL
       if (objectUrl) {
-        window.URL.revokeObjectURL(objectUrl);
+        setTimeout(() => window.URL.revokeObjectURL(objectUrl), 100);
       }
     }
-  };
+  }, [current, uploadedFilename, players]);
+
+  // Register menu event listener for Electron
+  useEffect(() => {
+    if (isElectron()) {
+      const cleanup = onMenuExportCSV(handleExportCSV);
+      return cleanup;
+    }
+  }, [handleExportCSV]);
 
   return (
     <div className="arrangement-display">

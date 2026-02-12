@@ -6,10 +6,14 @@ backend/.pytest_cache/
 backend/*.pyc
 backend/venv/
 backend/.venv/
+backend/dist/
+backend/build/
 
 # Frontend
-frontend/node_modules/
+**/node_modules/
 frontend/build/
+frontend/out/
+frontend/.next/
 frontend/.env.local
 frontend/.env.development.local
 frontend/.env.test.local
@@ -17,6 +21,10 @@ frontend/.env.production.local
 frontend/npm-debug.log
 frontend/yarn-debug.log
 frontend/yarn-error.log
+
+# Desktop
+desktop/dist/
+desktop/build/
 
 # IDE
 .vscode/
