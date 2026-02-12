@@ -6,11 +6,11 @@
   "scripts": {
     "start": "electron .",
     "dev": "cross-env NODE_ENV=development electron .",
-    "build": "electron-builder",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux",
-    "pack": "electron-builder --dir"
+    "build": "cross-env NODE_NO_WARNINGS=1 electron-builder",
+    "build:win": "cross-env NODE_NO_WARNINGS=1 electron-builder --win",
+    "build:mac": "cross-env NODE_NO_WARNINGS=1 electron-builder --mac",
+    "build:linux": "cross-env NODE_NO_WARNINGS=1 electron-builder --linux",
+    "pack": "cross-env NODE_NO_WARNINGS=1 electron-builder --dir"
   },
   "keywords": [
     "handbell",
