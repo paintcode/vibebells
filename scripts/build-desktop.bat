@@ -86,6 +86,7 @@ echo ✓ Frontend copied to desktop\build\
 
 echo.
 echo [4/4] Building Electron App...
+set NODE_NO_WARNINGS=1
 call npm run build:win
 if errorlevel 1 (
     echo ERROR: Electron build failed
