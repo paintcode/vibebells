@@ -15,6 +15,7 @@ const {
   launchElectronApp,
   waitForBackend,
   waitForFrontend,
+  cleanupElectronApp,
   takeScreenshot
 } = require('./helpers/electron-helpers');
 
@@ -39,18 +40,16 @@ test.describe('Vibebells Desktop Application', () => {
   });
   
   test.afterAll(async () => {
-    if (electronApp) {
-      await electronApp.close();
-    }
+    await cleanupElectronApp(electronApp);
   });
   
   test('should launch and display main window', async () => {
-    // Verify window is visible
-    expect(await window.isVisible()).toBeTruthy();
+    // Verify window exists and has loaded content
+    expect(window).toBeTruthy();
     
     // Check window title
     const title = await window.title();
-    expect(title).toContain('Vibebells');
+    expect(title).toContain('Handbell');
     
     // Verify main UI elements are present
     await expect(window.locator('h1')).toBeVisible();

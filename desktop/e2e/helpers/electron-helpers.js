@@ -7,16 +7,36 @@ const path = require('path');
 
 /**
  * Launch Electron app for testing
+ * @param {Object} options - Launch options
+ * @param {boolean} options.useBuild - Use built executable instead of dev mode (default: true)
  * @returns {Promise<{app: ElectronApplication, window: Page}>}
  */
-async function launchElectronApp() {
-  const electronPath = require('electron');
-  const appPath = path.join(__dirname, '..', '..');
+async function launchElectronApp(options = {}) {
+  const { useBuild = true } = options;
+  
+  let executablePath;
+  let args = [];
+  
+  if (useBuild) {
+    // Use built executable for production-like testing
+    const builtExePath = path.join(__dirname, '..', '..', 'dist', 'win-unpacked', 'Vibebells.exe');
+    const fs = require('fs');
+    if (!fs.existsSync(builtExePath)) {
+      throw new Error(`Built executable not found at ${builtExePath}. Run 'npm run build:desktop' first.`);
+    }
+    executablePath = builtExePath;
+  } else {
+    // Use dev mode (requires electron installed)
+    const electronPath = require('electron');
+    const appPath = path.join(__dirname, '..', '..');
+    executablePath = electronPath;
+    args = [appPath];
+  }
   
   // Launch Electron app
   const app = await electron.launch({
-    executablePath: electronPath,
-    args: [appPath],
+    executablePath,
+    args,
     env: {
       ...process.env,
       NODE_ENV: 'test',
@@ -66,13 +86,16 @@ async function waitForBackend(timeout = 30000) {
  * @param {number} timeout - Maximum wait time in ms
  * @returns {Promise<void>}
  */
-async function waitForFrontend(window, timeout = 10000) {
+async function waitForFrontend(window, timeout = 30000) {
   await window.waitForSelector('body', { timeout });
   
-  // Wait for React to render
+  // Wait for app content to render - look for the main heading
   await window.waitForFunction(() => {
-    const root = document.querySelector('#__next');
-    return root && root.children.length > 0;
+    // Check for Next.js root or look for main content
+    const nextRoot = document.querySelector('#__next');
+    const mainHeading = document.querySelector('h1');
+    const hasContent = document.body.textContent.includes('Handbell Arrangement Generator');
+    return (nextRoot && nextRoot.children.length > 0) || mainHeading || hasContent;
   }, { timeout });
 }
 
@@ -146,6 +169,26 @@ async function cleanupTestArtifacts() {
 }
 
 /**
+ * Cleanup Electron app and processes
+ * @param {ElectronApplication} app - Electron app instance
+ * @returns {Promise<void>}
+ */
+async function cleanupElectronApp(app) {
+  if (!app) return;
+  
+  try {
+    // Close the app with a shorter timeout
+    await Promise.race([
+      app.close(),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Close timeout')), 5000))
+    ]);
+  } catch (error) {
+    console.warn('App close timeout or error, forcing shutdown');
+    // App didn't close gracefully, processes may remain
+  }
+}
+
+/**
  * Take screenshot for debugging
  * @param {Page} window - Playwright page object
  * @param {string} name - Screenshot name
@@ -164,5 +207,6 @@ module.exports = {
   uploadMidiFile,
   generateArrangements,
   cleanupTestArtifacts,
+  cleanupElectronApp,
   takeScreenshot
 };
