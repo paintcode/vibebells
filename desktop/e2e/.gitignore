@@ -1,0 +1,18 @@
+# Playwright artifacts
+screenshots/
+e2e-report/
+e2e-results.json
+test-results/
+playwright-report/
+
+# Videos and traces
+videos/
+traces/
+
+# Temporary test files
+*.log
+temp-*
+
+# OS files
+.DS_Store
+Thumbs.db
