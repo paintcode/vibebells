@@ -5,13 +5,13 @@ This directory contains the application icons for all platforms.
 ## Icon Design
 
 The Vibebells icon features:
-- **Golden handbell** with black handle on maroon circular background
+- **Golden handbell** with black handle on maroon background
 - **Sound wave graphics** showing vibration/ringing
 - **Professional design** suitable for desktop and web applications
 
 ## Source File
 
-- **handbell-icon.png** - Original high-resolution PNG (1024x1024)
+- **handbell-icon-full-cropped.png** - Optimally cropped source image
   - This is the source image for all generated icons
 
 ## Generated Files
@@ -30,7 +30,7 @@ The Vibebells icon features:
 
 ## Regenerating Icons
 
-To regenerate all platform icons from handbell-icon.png:
+To regenerate all platform icons from handbell-icon-full-cropped.png:
 
 ```bash
 cd desktop

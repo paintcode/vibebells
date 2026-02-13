@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ASSETS_DIR = path.join(__dirname, 'assets');
-const SOURCE_IMAGE = path.join(ASSETS_DIR, 'handbell-icon.png');
+const SOURCE_IMAGE = path.join(ASSETS_DIR, 'handbell-icon-full-cropped.png');
 
 // Icon sizes needed for different platforms
 const SIZES = {
