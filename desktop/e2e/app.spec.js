@@ -13,6 +13,7 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 const {
   launchElectronApp,
+  mockFileDialog,
   waitForBackend,
   waitForFrontend,
   cleanupElectronApp,
@@ -90,25 +91,22 @@ test.describe('Vibebells Desktop Application', () => {
   });
   
   test('should upload MIDI file successfully', async () => {
-    const midiPath = path.join(__dirname, 'fixtures', 'test-song.mid');
+    const midiPath = path.resolve(__dirname, 'fixtures', 'test-song.mid');
     
-    // Set up file chooser handler
-    const fileChooserPromise = window.waitForEvent('filechooser');
+    // Mock the file dialog to return our test file
+    await mockFileDialog(window, midiPath);
     
-    // Click the file input or trigger file selection
-    const fileInput = window.locator('input[type="file"]');
-    await fileInput.click();
-    
-    // Handle file chooser
-    const fileChooser = await fileChooserPromise;
-    await fileChooser.setFiles(midiPath);
+    // Click the Electron file button
+    const electronFileButton = window.locator('button.electron-file-btn');
+    await expect(electronFileButton).toBeVisible({ timeout: 5000 });
+    await electronFileButton.click();
     
     // Wait for file to be processed
     await window.waitForTimeout(2000);
     
     // Verify file name is displayed
-    const fileName = window.locator('text=test-song.mid').or(window.locator('text=.mid'));
-    await expect(fileName.first()).toBeVisible({ timeout: 5000 });
+    const fileName = window.locator('text=test-song.mid');
+    await expect(fileName).toBeVisible({ timeout: 5000 });
   });
   
   test('should add and configure players', async () => {
@@ -131,6 +129,22 @@ test.describe('Vibebells Desktop Application', () => {
   });
   
   test('should generate arrangements successfully', async () => {
+    // First, upload a MIDI file
+    const midiPath = path.resolve(__dirname, 'fixtures', 'test-song.mid');
+    await mockFileDialog(window, midiPath);
+    
+    // Click the Electron file button
+    const electronFileButton = window.locator('button.electron-file-btn');
+    await expect(electronFileButton).toBeVisible({ timeout: 5000 });
+    await electronFileButton.click();
+    
+    // Wait for file to be uploaded and displayed
+    await window.waitForTimeout(2000);
+    
+    // Verify file name is displayed
+    const fileName = window.locator('text=test-song.mid');
+    await expect(fileName).toBeVisible({ timeout: 5000 });
+    
     // Find and click Generate Arrangements button
     const generateButton = window.locator('button:has-text("Generate Arrangements")');
     

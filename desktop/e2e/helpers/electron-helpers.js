@@ -36,7 +36,7 @@ async function launchElectronApp(options = {}) {
   // Launch Electron app
   const app = await electron.launch({
     executablePath,
-    args,
+    args: [...args, '--e2e-test'],  // Add test flag as command line argument
     env: {
       ...process.env,
       NODE_ENV: 'test',
@@ -49,6 +49,45 @@ async function launchElectronApp(options = {}) {
   await window.waitForLoadState('domcontentloaded');
   
   return { app, window };
+}
+
+/**
+ * Mock the Electron file dialog to return a test file
+ * @param {Page} window - Playwright page object
+ * @param {string} testFilePath - Absolute path to test MIDI file
+ * @returns {Promise<void>}
+ */
+async function mockFileDialog(window, testFilePath) {
+  const fs = require('fs');
+  
+  // Read the test file
+  const fileBuffer = fs.readFileSync(testFilePath);
+  const fileName = path.basename(testFilePath);
+  
+  // Use the test API to inject mocks
+  await window.evaluate(({ filePath, data, fileName }) => {
+    // Mock openFileDialog to return our test file path
+    window.__setElectronMock('openFileDialog', async () => {
+      console.log('Mock: openFileDialog called, returning:', filePath);
+      return filePath;
+    });
+    
+    // Mock readFile to return our test file data
+    window.__setElectronMock('readFile', async (path) => {
+      console.log('Mock: readFile called with:', path);
+      return {
+        success: true,
+        data: data, // Already an array
+        name: fileName
+      };
+    });
+    
+    console.log('✅ File dialog mocked successfully');
+  }, {
+    filePath: testFilePath,
+    data: Array.from(fileBuffer),
+    fileName
+  });
 }
 
 /**
@@ -216,6 +255,7 @@ async function takeScreenshot(window, name) {
 
 module.exports = {
   launchElectronApp,
+  mockFileDialog,
   waitForBackend,
   waitForFrontend,
   uploadMidiFile,
