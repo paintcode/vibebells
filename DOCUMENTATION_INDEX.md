@@ -3,87 +3,187 @@
 ## Quick Navigation
 
 ### 📋 Project Overview
-- **README.md** - Project description and quick start
+- **README.md** - Project description, quick start, and features
 - **bell-assignment-strategy.md** - Original algorithm specification
 - **PROJECT_STATUS.md** - Comprehensive project status and architecture
 
+### 🎯 Current Status (February 2026)
+✅ **Phase 8.5 Complete** - Production-ready desktop application with professional branding
+- 16/16 E2E tests passing (100%)
+- Desktop app with Windows installer + portable
+- Professional icons across all platforms
+- Web app with favicon and PWA support
+- CSV export functionality
+
 ### 📚 Phase Documentation
 
-#### Phase 1: Infrastructure
-- **Status:** ✅ COMPLETE
-- **Key Files:** backend/config.py, backend/app/__init__.py, frontend/src/App.js
-- **What it includes:** Project structure, Flask setup, React app, file upload handling
+#### Phase 8: Desktop Application (✅ COMPLETE)
+- **PHASE8_DESKTOP_IMPLEMENTATION.md** - Electron setup and integration
+- **PHASE8_CODE_REVIEW.md** - Security and quality fixes
+- **PHASE8_CODE_REVIEW_8.2.md** - Frontend integration fixes
+- **PHASE8_BACKEND_BUNDLING_PLAN.md** - PyInstaller strategy
+- **PHASE8_BACKEND_BUNDLING_COMPLETE.md** - Backend bundling results
+- **PHASE8_PRODUCTION_BUILD_COMPLETE.md** - Production build and testing
+- **PHASE8.5_BRANDING_COMPLETE.md** - Icons and branding implementation
+- **E2E_TESTING_SUMMARY.md** - Playwright E2E testing infrastructure
+- **TESTING_SUMMARY.md** - Production testing results
 
-#### Phase 2: Music Parsing
-- **Status:** ✅ COMPLETE + FIXES APPLIED
-- **Documentation:** PHASE2_NOTES.md, PHASE2_FIXES.md
-- **Key Services:**
-  - midi_parser.py (MIDI → notes with duration/tempo)
-  - musicxml_parser.py (MusicXML → notes)
-  - melody_harmony_extractor.py (melody vs harmony)
-  - music_parser.py (unified interface)
-- **Bugs Fixed:**
-  - MIDI duration calculation (NoteOn/NoteOff pairing)
-  - MIDI tempo extraction (microseconds → BPM conversion)
-  - MusicXML tempo extraction (MetronomeMark parsing)
-  - Bell assignment overflow
-  - Silent failures in strategies
+**Key Features**:
+- Electron-based desktop app (Windows, macOS, Linux)
+- Bundled Python backend (no installation needed)
+- Native file dialogs and menus
+- Offline operation
+- Professional handbell icon
+- 16/16 E2E tests passing
 
-#### Phase 3: Algorithm Implementation
-- **Status:** ✅ COMPLETE
-- **Documentation:** PHASE3_COMPLETE.md, PHASE3_SUMMARY.md
-- **New Services:**
-  - conflict_resolver.py (dedup, balance, optimize)
-  - arrangement_validator.py (validation + quality scoring)
-  - arrangement_generator.py (ENHANCED with integration)
-- **Features Delivered:**
-  - 3 arrangement strategies
-  - Quality scoring (0-100)
-  - Sustainability analysis
-  - Comprehensive validation
-  - Enhanced UI with visual feedback
+#### Phase 7: CSV Export (✅ COMPLETE)
+**Documentation**: Various PHASE7 files
+**Key Services**:
+- export_formatter.py (CSV formatting)
+- swap_counter.py (Accurate hand swap counting)
+**Features**:
+- Export arrangements to CSV
+- Accurate swap counting with lookahead
+- Comprehensive test coverage
+
+#### Phase 6.5: Next.js Migration (✅ COMPLETE)
+**Documentation**: MIGRATION_PLAN.md
+**What Changed**:
+- Migrated from deprecated Create React App to Next.js 15
+- App Router architecture
+- No breaking changes to functionality
+**Files**:
+- frontend/app/layout.js (root layout)
+- frontend/app/page.js (home page)
+- frontend/app/components/ (React components)
+
+#### Phase 6: Experience-Level Constraints (✅ COMPLETE)
+**Documentation**: PHASE6_EXPERIENCE_CONSTRAINTS.md
+**Features**:
+- Experience-level max bells (exp=5, inter=3, beginner=2)
+- Automatic player expansion
+- Even distribution of extra bells
+
+#### Phase 5: Hand Swap Optimization (✅ COMPLETE)
+**Documentation**: PHASE5_HAND_SWAP_OPTIMIZATION.md, PHASE5_SUMMARY.md
+**Features**:
+- Swap cost calculation
+- Temporal separation tracking
+- Min transitions strategy enhancement
+
+#### Phase 4: Multi-Bell Assignment (✅ COMPLETE)
+**Documentation**: PHASE4_COMPLETE.md, PHASE4_IMPLEMENTATION.md
+**Key Changes**:
+- Multi-bell support (up to 5 bells per player)
+- Hand assignment logic (left/right)
+- Hand tracking in arrangements
+
+#### Phase 3: Algorithm Implementation (✅ COMPLETE)
+**Documentation**: PHASE3_COMPLETE.md, PHASE3_SUMMARY.md
+**New Services**:
+- conflict_resolver.py (dedup, balance, optimize)
+- arrangement_validator.py (validation + quality scoring)
+- arrangement_generator.py (integrated pipeline)
+**Features**:
+- 3 arrangement strategies
+- Quality scoring (0-100)
+- Sustainability analysis
+
+#### Phase 2: Music Parsing (✅ COMPLETE + FIXES)
+**Documentation**: PHASE2_NOTES.md, PHASE2_FIXES.md
+**Key Services**:
+- midi_parser.py (MIDI → notes with duration/tempo)
+- musicxml_parser.py (MusicXML → notes)
+- melody_harmony_extractor.py (melody vs harmony)
+- music_parser.py (unified interface)
+
+#### Phase 1: Infrastructure (✅ COMPLETE)
+**Key Files**: backend/config.py, backend/app/__init__.py
+**What it includes**: Project structure, Flask setup, Next.js app, file upload handling
 
 ### 🗂️ Code Structure
 
 ```
-backend/app/services/
-├── file_handler.py              (Safe file operations)
-├── midi_parser.py               (MIDI parsing)
-├── musicxml_parser.py           (MusicXML parsing)
-├── melody_harmony_extractor.py  (Extract melody vs harmony)
-├── music_parser.py              (Unified parser)
-├── bell_assignment.py           (Core algorithm)
-├── conflict_resolver.py         (Post-processing)
-├── arrangement_validator.py     (Validation + scoring)
-└── arrangement_generator.py     (Integrated pipeline)
-
-frontend/src/
-├── App.js                       (Main component)
-├── components/
-│   ├── FileUpload.js
-│   ├── PlayerConfig.js
-│   └── ArrangementDisplay.js
+vibebells/
+├── desktop/                         # Electron desktop application
+│   ├── main.js                     # Main process (window, backend)
+│   ├── preload.js                  # Secure IPC bridge
+│   ├── assets/                     # Icons and branding
+│   │   ├── icon.svg               # Source icon
+│   │   ├── icon.ico               # Windows icon
+│   │   ├── icon.png               # Linux icon
+│   │   ├── icon.iconset/          # macOS icons
+│   │   └── README.md              # Icon documentation
+│   ├── e2e/                        # Playwright E2E tests
+│   │   ├── app.spec.js            # UI tests
+│   │   ├── api.spec.js            # API tests
+│   │   └── helpers/               # Test utilities
+│   ├── generate-icons.js           # Icon generation script
+│   ├── package.json
+│   └── README.md
+├── backend/                         # Flask API
+│   ├── app/
+│   │   ├── services/
+│   │   │   ├── file_handler.py
+│   │   │   ├── midi_parser.py
+│   │   │   ├── musicxml_parser.py
+│   │   │   ├── melody_harmony_extractor.py
+│   │   │   ├── music_parser.py
+│   │   │   ├── bell_assignment.py
+│   │   │   ├── conflict_resolver.py
+│   │   │   ├── arrangement_validator.py
+│   │   │   ├── arrangement_generator.py
+│   │   │   ├── export_formatter.py
+│   │   │   └── swap_counter.py
+│   │   └── routes.py
+│   ├── run.py
+│   ├── run.spec                    # PyInstaller spec
+│   └── requirements.txt
+├── frontend/                        # Next.js 15 application
+│   ├── app/
+│   │   ├── components/
+│   │   │   ├── FileUpload.js
+│   │   │   ├── PlayerConfig.js
+│   │   │   └── ArrangementDisplay.js
+│   │   ├── layout.js              # Root layout + metadata
+│   │   ├── page.js                # Home page
+│   │   └── globals.css
+│   ├── public/
+│   │   ├── favicon.ico            # Web favicon
+│   │   ├── logo192.png            # PWA icon
+│   │   └── logo512.png            # PWA icon
+│   ├── next.config.js
+│   └── package.json
+├── bell-assignment-strategy.md
+└── README.md
 ```
 
-### 🔧 Technical Details
+### 🔧 Technical Stack
 
-#### Backend Stack
+#### Desktop Application
+- **Framework:** Electron 33
+- **Builder:** Electron Builder (NSIS, portable, DMG, AppImage)
+- **Backend:** PyInstaller bundled executable (31.61 MB)
+- **Testing:** Playwright E2E tests (16/16 passing)
+
+#### Backend
 - **Framework:** Flask 2.3.3
-- **Music Libraries:** python-midi 0.2.8, music21 9.3.0
+- **Music Libraries:** mido (MIDI), music21 (MusicXML)
 - **CORS:** Flask-CORS 4.0.0
 - **File Handling:** werkzeug (secure filename, UUID)
 
-#### Frontend Stack
-- **Framework:** React 19.2.4
-- **HTTP Client:** axios 1.6.0
+#### Frontend
+- **Framework:** Next.js 15 (App Router)
+- **React:** 19.2.4
+- **HTTP Client:** fetch (native)
 - **Styling:** CSS Grid and Flexbox
 
 #### Configuration
-- **CORS Origins:** localhost:3000 (frontend), localhost:5000 (backend)
+- **CORS Origins:** localhost:3000 (web), localhost:3001 (desktop frontend), localhost:5000 (backend)
 - **File Size Limit:** 5MB
 - **Max Players:** 20
 - **Min Players:** 1
-- **Max Bells/Player:** 2
+- **Max Bells/Player:** Experience-dependent (exp=5, inter=3, beginner=2)
 
 ### 📊 Algorithm Specifications
 
@@ -265,19 +365,29 @@ Generate bell arrangements
 ✅ Phase 1: Infrastructure (Complete)
 ✅ Phase 2: Music Parsing (Complete + Fixes)
 ✅ Phase 3: Algorithm Implementation (Complete)
-⏳ Phase 4: Output & Export (Ready to start)
-⏳ Phase 5: Testing & Polish (After Phase 4)
-⏳ Phase 6: Advanced Features (Future)
+✅ Phase 4: Multi-Bell Assignment (Complete)
+✅ Phase 5: Hand Swap Optimization (Complete)
+✅ Phase 6: Experience-Level Constraints (Complete)
+✅ Phase 6.5: Next.js Migration (Complete)
+✅ Phase 7: CSV Export (Complete)
+✅ Phase 8: Desktop Application (Complete)
+✅ Phase 8.5: Icons & Branding (Complete)
+✅ Phase 9: Testing & Polish (Complete - 16/16 E2E tests passing)
+⏸️ Phase 8.6: Code Signing (Optional)
 ```
 
 ### 🎯 Next Steps
 
-1. **Phase 4:** Implement PDF generation and player parts export
-2. **Phase 5:** Add comprehensive test suite
-3. **Phase 6:** Consider advanced features (audio playback, arrangement editor, etc.)
+**Application is production-ready!**
+
+Optional enhancements:
+1. **Phase 8.6:** Code signing and auto-updater (requires certificates)
+2. **Future:** Audio playback preview
+3. **Future:** Arrangement editor (manual adjustments)
+4. **Future:** User accounts and cloud storage
 
 ---
 
-**Last Updated:** January 29, 2026
-**Project:** Handbell Arrangement Generator
-**Status:** Phase 3 Complete, Phase 4 Ready
+**Last Updated:** February 12, 2026
+**Project:** Vibebells - Handbell Arrangement Generator
+**Status:** ✅ Phase 8.5 Complete - Production Ready with Professional Branding

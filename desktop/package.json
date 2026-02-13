@@ -11,6 +11,7 @@
     "build:mac": "cross-env NODE_NO_WARNINGS=1 electron-builder --mac",
     "build:linux": "cross-env NODE_NO_WARNINGS=1 electron-builder --linux",
     "pack": "cross-env NODE_NO_WARNINGS=1 electron-builder --dir",
+    "generate-icons": "node generate-icons.js",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
@@ -31,7 +32,9 @@
     "cross-env": "^10.1.0",
     "electron": "^40.2.1",
     "electron-builder": "^26.7.0",
-    "playwright": "^1.58.2"
+    "playwright": "^1.58.2",
+    "png-to-ico": "^3.0.1",
+    "sharp": "^0.34.5"
   },
   "build": {
     "appId": "com.vibebells.app",

@@ -25,6 +25,8 @@ frontend/yarn-error.log
 # Desktop
 desktop/dist/
 desktop/build/
+desktop/assets/temp/
+desktop/assets/icon.iconset/
 
 # IDE
 .vscode/
