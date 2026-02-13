@@ -416,4 +416,44 @@ Content-Type: application/json
 ---
 
 **Testing Completed**: February 12, 2026 19:23:45 PST  
-**Next Action**: Rebuild backend and desktop app with CSV fix
+**Backend Rebuilt**: February 12, 2026 19:30:29 PST (31.64 MB)
+**Status**: ⚠️ Unable to complete full desktop rebuild - backend process locked
+
+## Post-Rebuild Status
+
+### ✅ Backend Successfully Rebuilt
+- PyInstaller completed successfully
+- New executable: `backend/dist/vibebells-backend.exe` (31.64 MB)
+- Timestamp: 2026-02-12 19:30:29
+- Includes CSV export fix (routes.py line 206)
+
+### ⚠️ Desktop App Rebuild Blocked
+**Issue**: Cannot overwrite vibebells-backend.exe in desktop build
+- Error: `PermissionError: [WinError 5] Access is denied`
+- Cause: Backend processes still running from testing
+- **Solution Required**: Restart system or manually kill all vibebells processes
+
+### 🔄 Required Actions Before Full Testing
+1. **System Restart** (or manually kill all vibebells* processes)
+2. **Run full desktop build**: `scripts\build-desktop.bat`
+3. **Launch new desktop app**: `desktop\dist\Vibebells 1.0.0.exe`
+4. **Complete CSV export testing** with steps below
+
+### CSV Export Test Procedure
+Once desktop app is rebuilt with fixed backend:
+1. Launch `Vibebells 1.0.0.exe`
+2. Upload `sample-music\O for a Thousand Tongues to Sing.mid`
+3. Configure 4 players: Alice (exp), Bob (int), Carol (beg), Dave (beg)
+4. Click "Generate Arrangements"
+5. Select first arrangement
+6. Click "Export CSV" or use File menu
+7. Save CSV file
+8. Open in Excel/LibreOffice Calc
+9. Verify CSV structure:
+   - Metadata section (filename, strategy, date)
+   - Players section (name, experience, bells, swaps)
+   - Bells section (sorted by pitch)
+
+**Expected Result**: CSV downloads successfully with proper formatting
+
+**Next Action**: System restart → full rebuild → complete CSV testing
