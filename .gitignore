@@ -33,3 +33,10 @@ desktop/build/
 *.swo
 *~
 .DS_Store
+
+# Playwright artifacts
+screenshots/
+e2e-report/
+e2e-results.json
+test-results/
+playwright-report/

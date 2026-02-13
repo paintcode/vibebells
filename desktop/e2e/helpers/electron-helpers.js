@@ -177,14 +177,28 @@ async function cleanupElectronApp(app) {
   if (!app) return;
   
   try {
-    // Close the app with a shorter timeout
+    // Close the app with a timeout
     await Promise.race([
       app.close(),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('Close timeout')), 5000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Close timeout')), 10000))
     ]);
+    console.log('App closed successfully');
   } catch (error) {
-    console.warn('App close timeout or error, forcing shutdown');
-    // App didn't close gracefully, processes may remain
+    console.warn('App close timeout or error:', error.message);
+  }
+  
+  // Give processes time to clean up
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Force kill any remaining backend processes on Windows
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = require('child_process');
+      execSync('taskkill /F /IM vibebells-backend.exe /T 2>nul', { stdio: 'ignore' });
+      console.log('Cleaned up any remaining backend processes');
+    } catch (error) {
+      // Process may not exist, ignore error
+    }
   }
 }
 
