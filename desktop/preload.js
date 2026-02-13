@@ -1,13 +1,32 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Create mutable test API that can be mocked
-const electronAPI = {
-  // Dialog APIs
-  openFileDialog: () => ipcRenderer.invoke('dialog:openFile'),
-  saveFileDialog: (defaultName) => ipcRenderer.invoke('dialog:saveFile', defaultName),
+// Mock registry for tests (mutable, not exposed through contextBridge)
+const mockRegistry = {};
+
+// Expose the Electron API
+contextBridge.exposeInMainWorld('electron', {
+  // Dialog APIs - check for mocks first
+  openFileDialog: () => {
+    if (mockRegistry.openFileDialog) {
+      return mockRegistry.openFileDialog();
+    }
+    return ipcRenderer.invoke('dialog:openFile');
+  },
   
-  // File system operations
-  readFile: (filePath) => ipcRenderer.invoke('fs:readFile', filePath),
+  saveFileDialog: (defaultName) => {
+    if (mockRegistry.saveFileDialog) {
+      return mockRegistry.saveFileDialog(defaultName);
+    }
+    return ipcRenderer.invoke('dialog:saveFile', defaultName);
+  },
+  
+  // File system operations - check for mocks first
+  readFile: (filePath) => {
+    if (mockRegistry.readFile) {
+      return mockRegistry.readFile(filePath);
+    }
+    return ipcRenderer.invoke('fs:readFile', filePath);
+  },
   
   // App info
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
@@ -21,21 +40,21 @@ const electronAPI = {
     ipcRenderer.on('menu-open-file', handler);
     return () => ipcRenderer.removeListener('menu-open-file', handler);
   },
+  
   onMenuExportCSV: (callback) => {
     const handler = () => callback();
     ipcRenderer.on('menu-export-csv', handler);
     return () => ipcRenderer.removeListener('menu-export-csv', handler);
   }
-};
+});
 
-// Expose the API
-contextBridge.exposeInMainWorld('electron', electronAPI);
-
-// Expose helper for tests to override methods (always available, but only used in tests)
+// Expose helper for tests to set mocks
 contextBridge.exposeInMainWorld('__setElectronMock', (methodName, mockFn) => {
-  if (electronAPI.hasOwnProperty(methodName)) {
-    electronAPI[methodName] = mockFn;
-    return true;
-  }
-  return false;
+  mockRegistry[methodName] = mockFn;
+  return true;
+});
+
+// Expose helper to clear mocks
+contextBridge.exposeInMainWorld('__clearElectronMocks', () => {
+  Object.keys(mockRegistry).forEach(key => delete mockRegistry[key]);
 });
