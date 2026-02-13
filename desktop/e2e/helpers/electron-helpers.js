@@ -193,14 +193,24 @@ async function generateArrangements(window) {
  * @returns {Promise<void>}
  */
 async function cleanupTestArtifacts() {
-  const fs = require('fs').promises;
-  const glob = require('glob');
+  const fs = require('fs');
   
   // Clean up CSV exports
-  const csvFiles = glob.sync(path.join(__dirname, '..', '..', '..', 'arrangement_*.csv'));
+  const artifactsDir = path.join(__dirname, '..', '..', '..');
+  let csvFiles = [];
+  try {
+    const entries = fs.readdirSync(artifactsDir);
+    csvFiles = entries
+      .filter((name) => name.startsWith('arrangement_') && name.endsWith('.csv'))
+      .map((name) => path.join(artifactsDir, name));
+  } catch (error) {
+    // If the directory can't be read, there's nothing to clean up
+    return;
+  }
+
   for (const file of csvFiles) {
     try {
-      await fs.unlink(file);
+      await fs.promises.unlink(file);
     } catch (error) {
       // Ignore errors
     }

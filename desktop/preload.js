@@ -48,13 +48,14 @@ contextBridge.exposeInMainWorld('electron', {
   }
 });
 
-// Expose helper for tests to set mocks
-contextBridge.exposeInMainWorld('__setElectronMock', (methodName, mockFn) => {
-  mockRegistry[methodName] = mockFn;
-  return true;
-});
+// Expose helpers for tests to set/clear mocks, but only in test/E2E environments
+if (process.env.NODE_ENV === 'test' || process.env.E2E_TEST === 'true') {
+  contextBridge.exposeInMainWorld('__setElectronMock', (methodName, mockFn) => {
+    mockRegistry[methodName] = mockFn;
+    return true;
+  });
 
-// Expose helper to clear mocks
-contextBridge.exposeInMainWorld('__clearElectronMocks', () => {
-  Object.keys(mockRegistry).forEach(key => delete mockRegistry[key]);
-});
+  contextBridge.exposeInMainWorld('__clearElectronMocks', () => {
+    Object.keys(mockRegistry).forEach(key => delete mockRegistry[key]);
+  });
+}

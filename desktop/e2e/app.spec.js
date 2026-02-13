@@ -16,8 +16,7 @@ const {
   mockFileDialog,
   waitForBackend,
   waitForFrontend,
-  cleanupElectronApp,
-  takeScreenshot
+  cleanupElectronApp
 } = require('./helpers/electron-helpers');
 
 let electronApp;
