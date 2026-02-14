@@ -185,11 +185,17 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
           const bells = playerData.bells || [];
           const leftHand = playerData.left_hand || [];
           const rightHand = playerData.right_hand || [];
+          const swapCount = current.swaps ? current.swaps[playerName] : null;
           
           return (
             <div key={playerName} className="player-assignment">
               <h3>{playerName}</h3>
-              <div className="bells-count">{bells.length} bells</div>
+              <div className="player-stats">
+                <div className="bells-count">{bells.length} bells</div>
+                {swapCount !== null && swapCount !== undefined && (
+                  <div className="swaps-count">{swapCount} swaps</div>
+                )}
+              </div>
               
               {/* Overall bells list */}
               <div className="bells-list">

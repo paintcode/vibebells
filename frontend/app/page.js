@@ -11,13 +11,20 @@ export default function Home() {
   const [file, setFile] = useState(null);
   const [players, setPlayers] = useState([
     { id: 1, name: 'Player 1', experience: 'experienced', bells: [] },
-    { id: 2, name: 'Player 2', experience: 'intermediate', bells: [] },
-    { id: 3, name: 'Player 3', experience: 'beginner', bells: [] }
+    { id: 2, name: 'Player 2', experience: 'experienced', bells: [] },
+    { id: 3, name: 'Player 3', experience: 'intermediate', bells: [] },
+    { id: 4, name: 'Player 4', experience: 'intermediate', bells: [] },
+    { id: 5, name: 'Player 5', experience: 'intermediate', bells: [] },
+    { id: 6, name: 'Player 6', experience: 'intermediate', bells: [] },
+    { id: 7, name: 'Player 7', experience: 'beginner', bells: [] },
+    { id: 8, name: 'Player 8', experience: 'beginner', bells: [] }
   ]);
   const [arrangements, setArrangements] = useState(null);
   const [expansionInfo, setExpansionInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  const arrangementsRef = React.useRef(null);
 
   // Register menu event listener for Electron
   useEffect(() => {
@@ -98,6 +105,14 @@ export default function Home() {
         } else {
           setExpansionInfo(null);
         }
+        
+        // Scroll to arrangements section after a short delay to allow rendering
+        setTimeout(() => {
+          arrangementsRef.current?.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }, 100);
       } else {
         // Handle specific error codes
         const errorMessage = getErrorMessage(data.code, data.error);
@@ -182,7 +197,7 @@ export default function Home() {
           </section>
 
           {arrangements && (
-            <section className="section">
+            <section className="section" ref={arrangementsRef}>
               <h2>3. Arrangements</h2>
               <ArrangementDisplay 
                 arrangements={arrangements} 
