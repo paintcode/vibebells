@@ -195,15 +195,17 @@ function stopBackend() {
       }
     } else {
       // On Unix-like systems, send SIGTERM first, then SIGKILL if needed
+      const processToKill = pythonProcess;
       pythonProcess.kill('SIGTERM');
       setTimeout(() => {
-        if (pythonProcess) {
-          pythonProcess.kill('SIGKILL');
+        try {
+          processToKill.kill('SIGKILL');
+        } catch (error) {
+          // Process may have already exited
         }
       }, 1000);
+      pythonProcess = null;
     }
-    
-    pythonProcess = null;
   }
 }
 
