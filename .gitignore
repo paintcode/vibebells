@@ -25,6 +25,8 @@ frontend/yarn-error.log
 # Desktop
 desktop/dist/
 desktop/build/
+desktop/assets/temp/
+desktop/assets/icon.iconset/
 
 # IDE
 .vscode/
@@ -33,3 +35,10 @@ desktop/build/
 *.swo
 *~
 .DS_Store
+
+# Playwright artifacts
+screenshots/
+e2e-report/
+e2e-results.json
+test-results/
+playwright-report/

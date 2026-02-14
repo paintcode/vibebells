@@ -202,8 +202,11 @@ def export_csv():
             if 'experience' not in player:
                 raise APIError('Each player must have an experience level', 'ERR_PLAYER_NO_EXPERIENCE', 400)
         
+        # Extract assignments from arrangement object
+        assignments = arrangement.get('assignments', arrangement)
+        
         # Format arrangement as CSV (pass swap_counts if available)
-        csv_content = ExportFormatter.format_to_csv(arrangement, players, filename, strategy, swap_counts)
+        csv_content = ExportFormatter.format_to_csv(assignments, players, filename, strategy, swap_counts)
         
         # Create response with CSV file
         csv_bytes = csv_content.encode('utf-8')

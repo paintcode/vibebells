@@ -181,8 +181,31 @@ function startBackend() {
 function stopBackend() {
   if (pythonProcess) {
     log.info('Stopping Python backend...');
-    pythonProcess.kill();
-    pythonProcess = null;
+    
+    if (process.platform === 'win32') {
+      // On Windows, kill the process tree
+      try {
+        const { execSync } = require('child_process');
+        execSync(`taskkill /pid ${pythonProcess.pid} /T /F`, { stdio: 'ignore' });
+        log.info('Backend process tree killed');
+      } catch (error) {
+        log.error('Failed to kill backend process tree:', error);
+        // Fallback to regular kill
+        pythonProcess.kill('SIGKILL');
+      }
+    } else {
+      // On Unix-like systems, send SIGTERM first, then SIGKILL if needed
+      const processToKill = pythonProcess;
+      pythonProcess.kill('SIGTERM');
+      setTimeout(() => {
+        try {
+          processToKill.kill('SIGKILL');
+        } catch (error) {
+          // Process may have already exited
+        }
+      }, 1000);
+      pythonProcess = null;
+    }
   }
 }
 

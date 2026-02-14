@@ -1,24 +1,86 @@
-# Vibebells - Handbell Arrangement Generator
+<div align="center">
+  <img src="desktop/assets/icon-256.png" alt="Vibebells Icon" width="128" height="128">
+  <h1>Vibebells - Handbell Arrangement Generator</h1>
+  <p><strong>Automated handbell arrangements from MIDI and MusicXML files</strong></p>
+  
+  [![Desktop App](https://img.shields.io/badge/Desktop-Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat-square)](desktop/)
+  [![Tests](https://img.shields.io/badge/Tests-16%2F16%20Passing-success?style=flat-square)](#testing)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+</div>
 
-A web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, configure players by experience level, and get multiple arrangement strategies with quality scoring and sustainability recommendations.
+---
+
+## Overview
+
+A desktop and web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, configure players by experience level, and get multiple arrangement strategies with quality scoring and sustainability recommendations.
+
+> **Latest Update**: Desktop application with E2E testing (16/16 tests passing), professional icons and branding
 
 > **Note**: As of February 2026, the frontend has been migrated from deprecated Create React App to **Next.js 15** with App Router for better performance, maintainability, and long-term support.
 
-## Features
+## ✨ Features
 
-- **Music Parsing**: Supports MIDI and MusicXML formats
-- **Multiple Strategies**: Three arrangement algorithms (experienced-first, balanced, min-transitions)
-- **Quality Scoring**: 0-100 score based on distribution, occupancy, utilization, and melody coverage
-- **Sustainability Analysis**: Bell spacing and reachability recommendations for player comfort
-- **Conflict Resolution**: Automatic deduplication and balancing of arrangements
-- **Web UI**: Next.js 15 with App Router, modern React 19 interface with real-time feedback
-- **Multi-Bell Support**: Players can manage up to 5 bells with hand assignment optimization
-- **Experience-Level Constraints**: Automatic player expansion when capacity is insufficient
+- 🖥️ **Desktop Application**: Native Windows, macOS, and Linux apps with Electron
+- 🎵 **Music Parsing**: Supports MIDI and MusicXML formats
+- 🎯 **Multiple Strategies**: Three arrangement algorithms (experienced-first, balanced, min-transitions)
+- 📊 **Quality Scoring**: 0-100 score based on distribution, occupancy, utilization, and melody coverage
+- 🔍 **Sustainability Analysis**: Bell spacing and reachability recommendations for player comfort
+- ⚖️ **Conflict Resolution**: Automatic deduplication and balancing of arrangements
+- 💎 **Modern UI**: Next.js 15 with App Router, React 19 interface with real-time feedback
+- 🔔 **Multi-Bell Support**: Players can manage up to 5 bells with hand assignment optimization
+- 👥 **Experience-Level Constraints**: Automatic player expansion when capacity is insufficient
+- 📥 **CSV Export**: Download arrangements for printing or sharing
+- ✅ **Comprehensive Testing**: 16/16 E2E tests passing with Playwright
+
+## 🚀 Quick Start
+
+### Desktop Application (Recommended)
+
+Download the latest release for your platform:
+
+- **Windows**: `Vibebells Setup 1.0.0.exe` or `Vibebells 1.0.0.exe` (portable)
+- **macOS**: `Vibebells-1.0.0.dmg` (coming soon)
+- **Linux**: `Vibebells-1.0.0.AppImage` or `.deb` (coming soon)
+
+Double-click to install and run. The app includes:
+- Bundled Python backend (no installation needed)
+- Native file dialogs and menus
+- Offline operation
+- Professional handbell icon
+
+See [desktop/README.md](desktop/README.md) for build instructions.
+
+### Web Application
+
+1. Start the backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python run.py
+```
+
+2. Start the frontend:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+3. Open http://localhost:3000
 
 ## Project Structure
 
 ```
 vibebells/
+├── desktop/                  # Electron desktop application
+│   ├── main.js              # Electron main process
+│   ├── preload.js           # Secure IPC bridge
+│   ├── assets/              # Icons and branding
+│   ├── e2e/                 # End-to-end tests (Playwright)
+│   ├── package.json
+│   └── README.md
 ├── frontend/                 # Next.js 15 application (App Router)
 │   ├── app/
 │   │   ├── components/
@@ -296,18 +358,47 @@ npm run dev
 - **Phase 5**: ✅ Hand swap optimization (minimize bell transfers)
 - **Phase 6**: ✅ Experience-level constraints and player expansion
 - **Phase 6.5**: ✅ Next.js 15 migration from deprecated Create React App
-- **Phase 7**: 🔄 Export features (PDF, player parts, sheet music)
-- **Phase 8**: 📋 Testing suite (unit, integration, end-to-end)
+- **Phase 7**: ✅ CSV export with accurate swap counting
+- **Phase 8**: ✅ Desktop application (Electron) with Windows installer
+- **Phase 8.5**: ✅ Icons and branding
+- **Phase 9**: ✅ Comprehensive testing (E2E, API, unit tests)
+
+### Testing
+
+**Desktop E2E Tests** (16/16 passing - 100%):
+```bash
+cd desktop
+npm install
+npm test           # Run all tests
+npm run test:headed  # Watch tests run
+npm run test:ui     # Interactive UI
+```
+
+**Backend Unit Tests**:
+```bash
+cd backend
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pytest tests/
+```
+
+Test coverage:
+- 5 API integration tests (health, generation, strategies, export)
+- 11 UI workflow tests (launch, upload, config, generation, export)
+- 13 SwapCounter unit tests
+- 11 ExportFormatter unit tests
+- 2 multi-bell integration tests
+
+See [E2E_TESTING_SUMMARY.md](E2E_TESTING_SUMMARY.md) and [TESTING_SUMMARY.md](TESTING_SUMMARY.md) for details.
 
 ### Key Documentation
 
 - [`bell-assignment-strategy.md`](bell-assignment-strategy.md) - Algorithm design
-- [`PHASE3_SUMMARY.md`](PHASE3_SUMMARY.md) - Latest implementation details
+- [`desktop/README.md`](desktop/README.md) - Desktop app build and configuration
+- [`desktop/assets/README.md`](desktop/assets/README.md) - Icons and branding
+- [`E2E_TESTING_SUMMARY.md`](E2E_TESTING_SUMMARY.md) - E2E testing infrastructure
+- [`TESTING_SUMMARY.md`](TESTING_SUMMARY.md) - Production testing results
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) - Current status and roadmap
-
-### Running Tests
-
-(Tests will be added in Phase 5)
+- [`PHASE3_SUMMARY.md`](PHASE3_SUMMARY.md) - Implementation details
 
 ## Architecture
 
@@ -342,9 +433,11 @@ Total: 0-100 (higher is better)
 
 ## Technology Stack
 
+- **Desktop**: Electron 33, Electron Builder (NSIS, portable, DMG, AppImage)
 - **Frontend**: Next.js 15 (App Router), React 19, CSS Grid/Flexbox
-- **Backend**: Flask, Python 3.8+
+- **Backend**: Flask, Python 3.8+, PyInstaller (standalone executable)
 - **Music Parsing**: mido (MIDI), music21 (MusicXML)
+- **Testing**: Playwright (E2E), pytest (unit/integration)
 - **File Upload**: Multipart form data
 - **CORS**: Flask-CORS
 
