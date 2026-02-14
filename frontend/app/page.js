@@ -134,8 +134,13 @@ export default function Home() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Handbell Arrangement Generator</h1>
-        <p>Upload a song and configure your players to generate bell arrangements</p>
+        <div className="header-content">
+          <img src="/logo192.png" alt="Vibebells" className="header-logo" />
+          <div className="header-text">
+            <h1>Handbell Arrangement Generator</h1>
+            <p>Upload a song and configure your players to generate bell arrangements</p>
+          </div>
+        </div>
       </header>
 
       <main className="App-main">
