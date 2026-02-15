@@ -18,14 +18,15 @@ export default function FileUpload({ onFileUpload }) {
 
   return (
     <div className="file-upload">
-      <label className="upload-label">
-        <input 
-          type="file" 
-          accept=".mid,.midi,.musicxml,.xml"
-          onChange={handleFileChange}
-          className="file-input"
-        />
-        <span className="upload-text">Click to upload MIDI or MusicXML file</span>
+      <input 
+        type="file" 
+        accept=".mid,.midi,.musicxml,.xml"
+        onChange={handleFileChange}
+        className="file-input-browser"
+        id="file-input"
+      />
+      <label htmlFor="file-input" className="file-input-label">
+        Choose File
       </label>
       <p className="file-help">Supported formats: MIDI (.mid), MusicXML (.musicxml)</p>
     </div>

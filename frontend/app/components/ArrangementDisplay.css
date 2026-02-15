@@ -69,14 +69,14 @@
 }
 
 .arrangement-tab:hover {
-  border-color: #667eea;
-  color: #667eea;
+  border-color: #8B2942;
+  color: #8B2942;
 }
 
 .arrangement-tab.active {
-  background-color: #667eea;
+  background-color: #8B2942;
   color: white;
-  border-color: #667eea;
+  border-color: #8B2942;
 }
 
 .arrangement-tab small {
@@ -123,7 +123,7 @@
 .player-assignment {
   padding: 1rem;
   background-color: #f9f9f9;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #8B2942;
   border-radius: 4px;
 }
 
@@ -133,10 +133,21 @@
   font-size: 1.1rem;
 }
 
+.player-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
 .bells-count {
   font-size: 0.85rem;
   color: #666;
-  margin-bottom: 0.5rem;
+}
+
+.swaps-count {
+  font-size: 0.85rem;
+  color: #8B2942;
+  font-weight: 600;
 }
 
 .bells-list {
@@ -148,11 +159,11 @@
 .bell-badge {
   display: inline-block;
   padding: 0.4rem 0.8rem;
-  background-color: #667eea;
-  color: white;
+  background-color: #D4A574;
+  color: #2C2C2C;
   border-radius: 20px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .no-bells {
@@ -172,16 +183,18 @@
 
 .hand-column {
   padding: 0.75rem;
-  background-color: #f0f4ff;
+  background-color: #fef5f8;
   border-radius: 4px;
+  min-width: 0; /* Allow columns to shrink below content size */
 }
 
 .hand-column h4 {
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
-  color: #667eea;
+  color: #8B2942;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap; /* Prevent label wrapping */
 }
 
 .hand-bells {
@@ -191,11 +204,13 @@
 }
 
 .bell-badge.left {
-  background-color: #42a5f5;
+  background-color: #8B2942;
+  color: white;
 }
 
 .bell-badge.right {
-  background-color: #ef5350;
+  background-color: #C89554;
+  color: #2C2C2C;
 }
 
 .no-hand-bells {
@@ -214,21 +229,23 @@
 
 .export-btn {
   padding: 0.75rem 1.5rem;
-  background-color: #4caf50;
+  background: linear-gradient(135deg, #8B2942 0%, #6A1F33 100%);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .export-btn:hover:not(:disabled) {
-  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 41, 66, 0.4);
 }
 
 .export-btn:disabled {
-  background-color: #ccc;
+  background: #ccc;
   cursor: not-allowed;
   opacity: 0.7;
 }
