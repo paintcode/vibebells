@@ -12,7 +12,7 @@
 
 ## Overview
 
-A desktop and web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, configure players by experience level, and get multiple arrangement strategies with quality scoring and sustainability recommendations.
+A desktop and web application that generates handbell arrangements for songs. Upload a MIDI or MusicXML file, configure players by experience level, and get multiple arrangement strategies with quality scoring.
 
 ## ✨ Features
 
@@ -20,7 +20,6 @@ A desktop and web application that generates handbell arrangements for songs. Up
 - 🎵 **Music Parsing**: Supports MIDI and MusicXML formats
 - 🎯 **Multiple Strategies**: Three arrangement algorithms (experienced-first, balanced, min-transitions)
 - 📊 **Quality Scoring**: 0-100 score based on distribution, occupancy, utilization, and melody coverage
-- 🔍 **Sustainability Analysis**: Bell spacing and reachability recommendations for player comfort
 - ⚖️ **Conflict Resolution**: Automatic deduplication and balancing of arrangements
 - 💎 **Modern UI**: Next.js 15 with App Router and React 19
 - 🔔 **Multi-Bell Support**: Players can manage up to 5 bells with hand assignment optimization
@@ -90,7 +89,6 @@ cd frontend && npm run dev
    - View quality score (0-100)
    - Check bell assignments and hand positions for each player
    - Review swap counts to understand bell transfer frequency
-   - Read sustainability recommendations
    - Compare different strategies
 5. **Export**: Download arrangement as CSV for printing or sharing
 

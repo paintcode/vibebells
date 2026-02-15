@@ -88,11 +88,10 @@ class ArrangementValidator:
     @staticmethod
     def sustainability_check(arrangement, music_data):
         """
-        Check sustainability: ensure players can physically ring bells without fatigue.
+        Check sustainability: ensure arrangement is practical for performance.
         
-        Heuristics:
-        - Players with bells in both hands should have them at different registers (not adjacent)
-        - Melody players should have some lower-register support
+        Returns basic sustainability status. Most physical playability concerns
+        are handled by bell count limits per experience level.
         
         Args:
             arrangement: Dict mapping player names to assignment dicts
@@ -101,49 +100,12 @@ class ArrangementValidator:
         Returns:
             Dict with sustainability metrics
         """
-        from app.services.music_parser import MusicParser
-        
         issues = []
         recommendations = []
         
-        for player_name, player_data in arrangement.items():
-            bells = player_data.get('bells', [])
-            
-            if len(bells) >= 2:
-                # Check pitch distance between bells
-                pitches = []
-                for bell_name in bells:
-                    # Parse bell name (e.g., "C4" -> pitch estimation)
-                    try:
-                        # Rough pitch mapping: C=0, D=2, E=4, F=5, G=7, A=9, B=11
-                        note_letter = bell_name[0]
-                        octave = int(bell_name[1:]) if len(bell_name) > 1 else 4
-                        
-                        note_to_semitone = {'C': 0, 'D': 2, 'E': 4, 'F': 5, 'G': 7, 'A': 9, 'B': 11}
-                        midi_pitch = 12 * (octave + 1) + note_to_semitone.get(note_letter, 0)
-                        pitches.append((bell_name, midi_pitch))
-                    except:
-                        pass
-                
-                # Check spacing between all pairs
-                for i in range(len(pitches)):
-                    for j in range(i + 1, len(pitches)):
-                        bell_name_i, pitch_i = pitches[i]
-                        bell_name_j, pitch_j = pitches[j]
-                        pitch_distance = abs(pitch_j - pitch_i)
-                        
-                        # Warn if bells are too close (less than 3 semitones)
-                        if pitch_distance < 3:
-                            recommendations.append(
-                                f"{player_name}: Bells {bell_name_i} and {bell_name_j} are very close ({pitch_distance} semitones). "
-                                f"Consider spacing further apart for easier ringing."
-                            )
-                        
-                        # Recommend distribution for large ranges
-                        if pitch_distance > 12:
-                            recommendations.append(
-                                f"{player_name}: Large range ({pitch_distance} semitones). Ensure player can comfortably reach all bells."
-                            )
+        # Currently no sustainability issues to check beyond validation constraints
+        # Bell count limits (2/3/5 per experience level) handle capacity concerns
+        # Hand assignments ensure even distribution between hands
         
         return {
             'issues': issues,

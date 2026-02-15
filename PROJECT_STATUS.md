@@ -58,8 +58,7 @@ Vibebells is a complete, production-ready handbell arrangement generator availab
 - ✅ **Player expansion**: Automatically adds players when capacity insufficient
 
 ### Quality & Validation
-- ✅ **Quality scoring**: 0-100 score based on distribution, occupancy, utilization, melody coverage, hand swap efficiency
-- ✅ **Sustainability analysis**: Bell spacing and reachability recommendations
+- ✅ **Quality scoring**: 0-100 score based on distribution, occupancy, utilization, melody coverage
 - ✅ **Constraint validation**: Enforces minimum 2 bells, maximum per experience level
 - ✅ **Conflict resolution**: Deduplication and balancing
 
