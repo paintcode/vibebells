@@ -185,7 +185,7 @@ export default function Home() {
                 >
                   Choose File
                 </button>
-                <p className="file-help">Supported formats: MIDI (.mid), MusicXML (.musicxml)</p>
+                <p className="file-help">Supported formats: MIDI (.mid, .midi), MusicXML (.xml, .musicxml)</p>
               </>
             )}
             {!isElectron() && <FileUpload onFileUpload={handleFileUpload} />}

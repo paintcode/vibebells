@@ -239,7 +239,7 @@ Total: 0-100 (higher is better)
 
 MIT License
 
-Copyright (c) 2026 PaintCode
+Copyright (c) 2026 Marie Danenhower
 
 See [LICENSE](LICENSE) file for details.
 

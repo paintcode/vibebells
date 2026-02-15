@@ -393,7 +393,7 @@ async function createWindow() {
                 'Handbell Arrangement Generator\n' +
                 'Version 1.0.0\n\n' +
                 'Made by PaintCode\n' +
-                'Copyright © 2026 PaintCode\n' +
+                'Copyright © 2026 Marie Danenhower\n' +
                 'Licensed under the MIT License\n\n' +
                 'For help, feedback, or to report issues:\n' +
                 'https://github.com/paintcode/vibebells',
