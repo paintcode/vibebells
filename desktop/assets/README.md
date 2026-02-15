@@ -59,11 +59,3 @@ iconutil -c icns assets/icon.iconset
 - Size: 512x512px
 - Used in: Application launcher, system menus
 
-## Color Palette
-
-- **Background**: Maroon/Burgundy (#8B2942)
-- **Bell**: Gold gradient (#D4A574 → #F4D03F)
-- **Handle**: Black (#2C2C2C)
-- **Sound waves**: White (#FFFFFF)
-- **Clapper**: Gray (#6C6C6C)
-
