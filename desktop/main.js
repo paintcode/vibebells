@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, ipcMain, nativeImage, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -380,14 +380,32 @@ async function createWindow() {
       submenu: [
         {
           label: 'About Vibebells',
-          click: () => {
-            dialog.showMessageBox(mainWindow, {
+          click: async () => {
+            const iconPath = path.join(__dirname, 'assets', 'icon.png');
+            const icon = nativeImage.createFromPath(iconPath);
+            
+            const response = await dialog.showMessageBox(mainWindow, {
               type: 'info',
               title: 'About Vibebells',
               message: 'Vibebells',
-              detail: 'Handbell Arrangement Generator\nVersion 1.0.0\n\nGenerates handbell arrangements from MIDI files.',
-              buttons: ['OK']
+              icon: icon,
+              detail: 
+                'Handbell Arrangement Generator\n' +
+                'Version 1.0.0\n\n' +
+                'Made by PaintCode\n' +
+                'Copyright © 2026 Marie Danenhower\n' +
+                'Licensed under the MIT License\n\n' +
+                'For help, feedback, or to report issues:\n' +
+                'https://github.com/paintcode/vibebells',
+              buttons: ['OK', 'More Info'],
+              defaultId: 0,
+              cancelId: 0
             });
+            
+            // If user clicked "More Info"
+            if (response.response === 1) {
+              shell.openExternal('https://github.com/paintcode/vibebells');
+            }
           }
         }
       ]
@@ -482,7 +500,9 @@ ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: 'MIDI Files', extensions: ['mid', 'midi'] }
+      { name: 'Music Files', extensions: ['mid', 'midi', 'musicxml', 'xml'] },
+      { name: 'MIDI Files', extensions: ['mid', 'midi'] },
+      { name: 'MusicXML Files', extensions: ['musicxml', 'xml'] }
     ]
   });
   

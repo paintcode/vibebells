@@ -5,6 +5,10 @@ export const metadata = {
   description: 'Automated handbell arrangements from MIDI and MusicXML files. Generate professional arrangements with quality scoring, hand assignment optimization, and CSV export.',
   keywords: 'handbell, arrangement, MIDI, MusicXML, bell assignment, church music',
   authors: [{ name: 'Vibebells Team' }],
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/logo192.png',
+  },
 };
 
 export default function RootLayout({ children }) {

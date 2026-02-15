@@ -28,7 +28,7 @@ export default function FileUpload({ onFileUpload }) {
       <label htmlFor="file-input" className="file-input-label">
         Choose File
       </label>
-      <p className="file-help">Supported formats: MIDI (.mid), MusicXML (.musicxml)</p>
+      <p className="file-help">Supported formats: MIDI (.mid, .midi), MusicXML (.xml, .musicxml)</p>
     </div>
   );
 }

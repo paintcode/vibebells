@@ -1,31 +1,38 @@
 # Vibebells Desktop Application
 
-Desktop version of the Handbell Arrangement Generator using Electron.
+Desktop version of the Vibebells handbell arrangement generator using Electron.
 
 ## Development
 
 ### Prerequisites
-- Node.js 20+
-- Python 3.11+
-- Flask backend dependencies installed
+- Node.js 18+
+- Python 3.8+
 
 ### Running in Development Mode
 
-1. **Start the Python backend** (in one terminal):
+The desktop app needs both the backend and frontend running:
+
+1. **Start the Python backend** (terminal 1):
    ```bash
    cd backend
-   python -m flask run
+   python -m venv venv
+   venv\Scripts\activate  # Windows
+   # source venv/bin/activate  # macOS/Linux
+   pip install -r requirements.txt
+   python run.py
    ```
 
-2. **Start the Next.js frontend** (in another terminal):
+2. **Start the Next.js frontend** (terminal 2):
    ```bash
    cd frontend
+   npm install
    npm run dev
    ```
 
-3. **Start Electron** (in a third terminal):
+3. **Start Electron** (terminal 3):
    ```bash
    cd desktop
+   npm install
    npm run dev
    ```
 
@@ -33,129 +40,136 @@ The Electron app will load the Next.js dev server at http://localhost:3000 and c
 
 ## Building for Production
 
-### Quick Build (Windows)
+### Automated Build Script (Windows)
+
+The easiest way to build on Windows is using the provided script:
+
 ```bash
-# From project root
-.\scripts\build-desktop.bat
-cd desktop
-npm run build:win
+scripts\build-desktop.bat
 ```
+
+This script automatically:
+1. Builds the Python backend with PyInstaller
+2. Builds the Next.js frontend
+3. Copies the frontend to desktop/build
+4. Packages the Electron app
+
+Output: `desktop/dist/Vibebells Setup 1.0.0.exe` (installer) and `Vibebells 1.0.0.exe` (portable)
 
 ### Manual Build Steps
 
-1. **Build Next.js frontend** (static export):
-   ```bash
-   cd frontend
-   set BUILD_ELECTRON=true
-   npm run build
-   ```
+#### Windows Build
 
-2. **Copy frontend build to desktop**:
-   ```bash
-   xcopy /E /I frontend\out desktop\build
-   ```
+```bash
+cd frontend
+npm run build
+xcopy /E /I out ..\desktop\build
 
-3. **Build Python backend** with PyInstaller:
-   ```bash
-   cd backend
-   pip install pyinstaller
-   pyinstaller --name=run --onefile --hidden-import=flask --hidden-import=flask_cors --hidden-import=mido --hidden-import=music21 --add-data "app;app" run.py
-   ```
+cd ..\backend
+pip install pyinstaller
+pyinstaller vibebells-backend.spec
 
-4. **Package with Electron Builder**:
-   ```bash
-   cd desktop
-   npm run build
-   ```
+cd ..\desktop
+npm run build:win
+```
 
-Output installers will be in `desktop/dist/`:
-- Windows: `Vibebells Setup 1.0.0.exe` (NSIS installer) and `Vibebells 1.0.0.exe` (portable)
+Output: `desktop/dist/Vibebells Setup 1.0.0.exe` (installer) and `Vibebells 1.0.0.exe` (portable)
+
+### macOS Build (on macOS)
+
+```bash
+cd frontend
+npm run build
+cp -r out ../desktop/build
+
+cd ../backend
+pip install pyinstaller
+pyinstaller vibebells-backend.spec
+
+cd ../desktop
+npm run build:mac
+```
+
+Output: `desktop/dist/Vibebells-1.0.0.dmg`
+
+### Linux Build
+
+```bash
+cd frontend
+npm run build
+cp -r out ../desktop/build
+
+cd ../backend
+pip install pyinstaller
+pyinstaller vibebells-backend.spec
+
+cd ../desktop
+npm run build:linux
+```
+
+Output: `desktop/dist/Vibebells-1.0.0.AppImage` and `.deb`
 
 ## Features
 
-- ✅ Native file dialogs for MIDI upload and CSV export
-- ✅ Application menu with keyboard shortcuts
-- ✅ Cross-platform support (Windows, macOS, Linux)
-- ✅ Bundled Python backend (no separate installation needed)
-- ✅ Auto-updates support (can be configured)
+- Native file dialogs for music file upload and CSV export
+- Application menu with About dialog
+- Cross-platform support (Windows, macOS, Linux)
+- Bundled Python backend (no separate installation needed)
+- Offline operation
 
 ## Architecture
 
 ```
-Vibebells Desktop
-├── Electron Shell (main.js)
-│   ├── Spawns Python backend subprocess
-│   ├── Creates native window with Next.js UI
-│   └── Provides native file dialogs
-├── Next.js Frontend (static build in build/)
-│   └── React UI with API calls to localhost:5000
-└── Python Backend (bundled executable)
-    └── Flask API server with music processing
+Electron Main Process (main.js)
+├── Spawns Python backend subprocess
+├── Creates window loading static Next.js build
+├── Provides IPC bridge (preload.js) for:
+│   ├── File dialogs
+│   └── File reading
+└── Handles app lifecycle
+
+Frontend (Next.js static build)
+└── Communicates with backend via fetch to localhost:5000
+
+Backend (PyInstaller executable)
+└── Flask API server with music processing
 ```
 
-## Keyboard Shortcuts
+## Testing
 
-- `Ctrl+O` / `Cmd+O` - Open MIDI file
-- `Ctrl+E` / `Cmd+E` - Export CSV
-- `Ctrl+Q` / `Cmd+Q` - Quit application
-- `F12` - Toggle DevTools (development only)
-
-## Configuration
-
-### Backend Port
-The backend runs on `localhost:5000` by default. To change:
-1. Update `FLASK_RUN_PORT` in backend environment
-2. Update connection in `desktop/main.js`
-
-### Window Size
-Default: 1200x800 (minimum: 800x600)
-To change, edit `desktop/main.js`:
-```javascript
-mainWindow = new BrowserWindow({
-  width: 1200,  // Change here
-  height: 800,  // Change here
-  // ...
-});
+```bash
+cd desktop
+npm test              # Run all E2E tests
+npm run test:headed   # Watch tests run
+npm run test:ui       # Interactive test UI
 ```
+
+**Test Suite**: 16/16 passing (5 API tests + 11 UI tests)
+
+## Icon Generation
+
+To regenerate app icons:
+
+```bash
+cd desktop
+npm run generate-icons
+```
+
+This creates platform-specific icons from `desktop/assets/handbell-icon-full-cropped.png`.
 
 ## Troubleshooting
 
 ### Backend doesn't start
-- Check Python is installed and in PATH
-- Verify Flask backend works standalone: `cd backend && python run.py`
-- Check console output in Electron DevTools
+- Check Python is installed: `python --version`
+- Verify backend works standalone: `cd backend && python run.py`
+- Check Electron console for error messages (Help > Toggle Developer Tools)
 
 ### Frontend doesn't load
-- Verify Next.js builds successfully: `cd frontend && npm run build`
-- Check `desktop/build/` contains the static files
-- Enable DevTools (F12) to see console errors
+- Verify Next.js build succeeded: check `desktop/build/` contains HTML files
+- Clear cache: delete `desktop/build/` and rebuild frontend
+- Check DevTools Network tab for failed requests
 
 ### Build errors
-- Ensure all dependencies are installed: `npm install` in both `frontend/` and `desktop/`
-- Clear build caches: delete `frontend/.next/`, `frontend/out/`, `desktop/build/`
-- Rebuild: `npm run build` in frontend, then copy to desktop
-
-## Platform-Specific Notes
-
-### Windows
-- WebView2 is bundled with Electron (no separate installation)
-- NSIS installer creates Start Menu shortcuts
-- Portable version available for USB deployment
-
-### macOS
-- Code signing required for distribution (not for development)
-- DMG provides drag-to-Applications install
-- Notarization required for macOS 10.15+
-
-### Linux
-- AppImage is self-contained (no installation needed)
-- .deb package for Debian/Ubuntu systems
-- Requires WebKitGTK on some distributions
-
-## Next Steps
-
-- [ ] Create application icons (see `desktop/assets/README.md`)
-- [ ] Configure auto-updater (optional)
-- [ ] Set up code signing for distribution
-- [ ] Create installers for all platforms
-- [ ] Add application icon and branding
+- Clear all build artifacts: delete `frontend/.next/`, `frontend/out/`, `desktop/build/`, `desktop/dist/`
+- Reinstall dependencies: `npm install` in frontend and desktop
+- Ensure Python backend builds: `cd backend && pyinstaller vibebells-backend.spec`

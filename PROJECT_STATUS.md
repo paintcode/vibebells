@@ -1,367 +1,243 @@
-# Project Status: Phase 5 Complete ✅
+# Project Status: Production Ready ✅
 
-## Current Phase: Hand Swap Optimization (Phase 5) ✅ COMPLETE
+## Current Status: Vibebells 1.0.0
 
-### What's New in Phase 5
+Vibebells is a complete, production-ready handbell arrangement generator available as both a desktop application and web application. The system generates optimized arrangements from MIDI and MusicXML files with experience-based player configuration, quality scoring, and CSV export capabilities.
 
-**Hand Swap Optimization** - Enhanced the `min_transitions` strategy to minimize the number of hand swaps a player needs during performance.
+## Recent Milestones
 
-**Problem**: When assigning extra bells (3rd+) to players, how do you choose which bells to assign to minimize playability issues?
+### Desktop Application (Phase 8-8.5) ✅
+- **Electron packaging**: Windows installer (NSIS), portable executable, macOS DMG (planned), Linux AppImage (planned)
+- **Backend bundling**: PyInstaller integration with bundled Python backend
+- **Professional branding**: Custom handbell icon across all platforms
+- **Native features**: File dialogs, system menus, About dialog with attribution
+- **Offline operation**: Fully functional without internet connection
 
-**Solution**: Calculate swap costs for each candidate bell and assign bells that require fewer hand transitions during actual performance.
+### Testing Infrastructure (Phase 9) ✅
+- **E2E testing**: Playwright test suite with 16/16 tests passing (100%)
+  - 5 API integration tests
+  - 11 UI workflow tests
+- **Backend tests**: pytest suite with SwapCounter and ExportFormatter unit tests
+- **Test coverage**: Sequential execution for Electron single-instance constraint
+- **CI-ready**: All tests automated and reproducible
 
-### Phase 5 Deliverables
+### CSV Export (Phase 7) ✅
+- **Accurate swap counting**: Tracks hand transfers during performance
+- **Formatted output**: Player name, bells, left hand, right hand, swap count
+- **Download capability**: Browser download and Electron file save dialog
+- **Production validation**: Tested with real arrangements and verified counts
 
-#### New Services
-- **`swap_cost_calculator.py`** - Core optimization engine
-  - Calculates how many hand swaps each bell assignment requires
-  - Scores bells based on 3 factors: swap cost (50%), frequency (30%), isolation (20%)
-  - Returns composite score [0, 1] where 0 = best choice
+### UI/UX Enhancements ✅
+- **Maroon/gold color scheme**: Professional branding throughout
+- **Swap count display**: Shows hand transfers per player
+- **Auto-scroll**: Scrolls to results after generation
+- **Default configuration**: Starts with 8 players (2 experienced, 4 intermediate, 2 beginner)
+- **Hand assignment visualization**: Left/right hand breakdown with color coding
+- **Responsive design**: Works on desktop and mobile browsers
 
-#### Enhanced Services
-- **`bell_assignment.py`** - Upgraded min_transitions strategy
-  - Phase 1: Guarantee every player gets 2 bells minimum
-  - Phase 2: Assign extra bells using swap cost optimization
-  
-- **`music_parser.py`** - Bidirectional pitch conversion
-  - Added `note_name_to_pitch()` method
-  
-- **`arrangement_validator.py`** - Enhanced quality scoring
-  - New 5th metric: Hand Swap Efficiency (20%)
-  - Calculates actual swap counts from note timeline
+### Frontend Modernization (Phase 6.5) ✅
+- **Next.js 15 migration**: Migrated from deprecated Create React App
+- **App Router**: Modern Next.js architecture
+- **React 19**: Latest React features and optimizations
+- **Improved performance**: Better build times and runtime performance
 
-#### Test Coverage (All Passing ✅)
-- **7 unit tests** (test_swap_cost.py)
-- **3 integration tests** including sample MIDI with 18 notes
-- Real-world validation: 8 players, all constraints satisfied
+## Core Features
 
-#### Documentation
-- PHASE5_HAND_SWAP_OPTIMIZATION.md - Design specification
-- PHASE5_IMPLEMENTATION.md - Implementation details  
-- PHASE5_SUMMARY.md - Quick reference
+### Music Processing
+- ✅ **MIDI parsing**: Full support with mido library
+- ✅ **MusicXML parsing**: Complete support with music21
+- ✅ **Melody extraction**: Intelligent melody vs harmony separation
+- ✅ **Note timing**: Accurate duration and tempo handling
 
-### Architecture Overview
+### Arrangement Generation
+- ✅ **Three strategies**: experienced_first, balanced, min_transitions
+- ✅ **Multi-bell support**: Up to 5 bells per player (2 for beginners, 3 for intermediate, 5 for experienced)
+- ✅ **Hand optimization**: Automatic left/right hand assignment
+- ✅ **Swap minimization**: Reduces hand transfers during performance
+- ✅ **Experience constraints**: Respects player skill levels
+- ✅ **Player expansion**: Automatically adds players when capacity insufficient
 
-### Backend Services (C:\src\vibebells\backend\app\services\)
+### Quality & Validation
+- ✅ **Quality scoring**: 0-100 score based on distribution, occupancy, utilization, melody coverage, hand swap efficiency
+- ✅ **Sustainability analysis**: Bell spacing and reachability recommendations
+- ✅ **Constraint validation**: Enforces minimum 2 bells, maximum per experience level
+- ✅ **Conflict resolution**: Deduplication and balancing
 
-| Service | Purpose | Key Features |
-|---------|---------|--------------|
-| `midi_parser.py` | Parse MIDI files | NoteOn/NoteOff pairing, tempo extraction, duration calculation |
-| `musicxml_parser.py` | Parse MusicXML files | Chord extraction, MetronomeMark tempo, music21 integration |
-| `melody_harmony_extractor.py` | Identify melody vs harmony | Highest pitch heuristic, frequency counting |
-| `music_parser.py` | Route to format-specific parser | Unified interface, note pitch conversion |
-| `bell_assignment.py` | Core bell assignment algorithm | 3 strategies (experienced_first, balanced, min_transitions with swap cost) |
-| `swap_cost_calculator.py` | Hand swap optimization | Calculates swap costs, temporal gaps, composite scoring |
-| `conflict_resolver.py` | Resolve assignment conflicts | Deduplication, balancing, experience optimization |
-| `arrangement_validator.py` | Validate and score arrangements | Constraints, sustainability, quality scoring (0-100), hand swap metrics |
-| `arrangement_generator.py` | Generate multiple arrangements | Integrated pipeline with swap cost optimization |
-| `file_handler.py` | File operations | UUID filenames, validation, safe cleanup |
+### User Interface
+- ✅ **File upload**: Drag-and-drop or button upload with validation
+- ✅ **Player configuration**: Add/remove players with experience levels
+- ✅ **Arrangement display**: Tabbed view with quality scores and hand assignments
+- ✅ **CSV export**: Download arrangements for printing
+- ✅ **Error handling**: Clear user feedback for all error conditions
+- ✅ **Responsive design**: Mobile and desktop friendly
 
-### Frontend Components (C:\src\vibebells\frontend\src\)
+## Architecture
 
-| Component | Purpose |
-|-----------|---------|
-| `App.js` | Main orchestrator, state management, error handling |
-| `FileUpload.js` | Music file upload with validation |
-| `PlayerConfig.js` | Player configuration (name, experience, add/remove) |
-| `ArrangementDisplay.js` | Display arrangements with scores, validation, tabs, hand breakdown |
-
-## End-to-End Flow
-
+### Backend (Flask + Python)
 ```
-USER INTERACTION
-├── Upload MIDI/MusicXML file
-└── Configure players (experience level, names)
-        ↓
-API REQUEST (/api/generate-arrangements)
-        ↓
-FILE HANDLING
-├── Save file with UUID filename
-├── Validate file size (5MB max)
-└── File cleanup after processing
-        ↓
-MUSIC PARSING
-├── Parse MIDI or MusicXML
-├── Extract notes with timing/duration
-├── Extract tempo (BPM)
-└── Identify melody vs harmony
-        ↓
-BELL ASSIGNMENT (3 Strategies)
-├── Strategy 1: Experienced First
-│   └── Melody → experienced players
-├── Strategy 2: Balanced
-│   └── Distribute evenly with swap cost optimization
-└── Strategy 3: Minimize Transitions (enhanced)
-    └── Minimize swaps using swap cost calculator
-        ↓
-POST-PROCESSING
-├── Resolve duplicate assignments
-├── Balance workload across players
-└── Optimize for experience level (preserve min 2 bells)
-        ↓
-VALIDATION & SCORING
-├── Check constraints (≥2 bells/player, ≤8 bells/player, no duplicates)
-├── Hand assignment validation
-├── Sustainability analysis (bell spacing, ranges)
-├── Quality scoring:
-│   ├── Distribution (20%)
-│   ├── Occupancy (20%)
-│   ├── Utilization (20%)
-│   ├── Melody Coverage (20%)
-│   └── Hand Swap Efficiency (20%) ← NEW
-└── Flag issues and recommendations
-        ↓
-RESPONSE TO FRONTEND
-├── All 3 arrangements ranked by quality score
-├── Validation status per arrangement
-├── Sustainability recommendations
-├── Hand assignments with hand breakdown
-└── Best arrangement highlighted
-        ↓
-USER INTERFACE
-├── Display tabs for all 3 arrangements
-├── Quality score bar (color-coded)
-├── Validation status and warnings
-├── Bell assignments per player
-├── Hand breakdown (left/right hand visual)
-└── Export options (future)
+backend/
+├── app/
+│   ├── services/
+│   │   ├── file_handler.py              # File validation and management
+│   │   ├── midi_parser.py               # MIDI parsing with mido
+│   │   ├── musicxml_parser.py           # MusicXML parsing with music21
+│   │   ├── melody_harmony_extractor.py  # Melody identification
+│   │   ├── music_parser.py              # Unified parser interface
+│   │   ├── bell_assignment.py           # Core assignment algorithm
+│   │   ├── swap_cost_calculator.py      # Hand swap optimization
+│   │   ├── conflict_resolver.py         # Deduplication and balancing
+│   │   ├── arrangement_validator.py     # Quality scoring and validation
+│   │   ├── arrangement_generator.py     # Multi-strategy generation
+│   │   ├── swap_counter.py              # Hand transfer counting
+│   │   ├── export_formatter.py          # CSV export formatting
+│   │   └── routes.py                    # API endpoints
+│   └── __init__.py
+├── run.py                                # Flask application entry
+└── requirements.txt
 ```
 
-## Key Algorithms
-
-### 1. Bell Assignment (bell_assignment.py)
-
-**Multi-Bell Support**: Each player can hold 2-8 bells with hand tracking
-
-**Strategy: Minimize Transitions + Swap Cost** (Phase 5 enhancement)
+### Frontend (Next.js + React)
 ```
-Phase 1: Ensure every player gets 2 bells minimum
-  - Distribute bells 1-2 to all players first
-  - Hand assignment: even index=left, odd index=right
-
-Phase 2: Assign remaining bells with swap cost optimization
-  For each unassigned bell:
-    For each player with available capacity:
-      Calculate score = score_bell_for_player(bell, player)
-      - Swap cost (50%): How many hand transitions this bell would need
-      - Frequency (30%): How often the bell is played (rare is better)
-      - Isolation (20%): Temporal separation from other bells
-    Assign bell to player with lowest score
+frontend/
+├── app/
+│   ├── components/
+│   │   ├── FileUpload.js                # File upload with validation
+│   │   ├── PlayerConfig.js              # Player management
+│   │   └── ArrangementDisplay.js        # Results display with export
+│   ├── layout.js                        # Root layout with metadata
+│   ├── page.js                          # Main application
+│   └── globals.css                      # Global styles
+└── public/                               # Static assets (icons, manifest)
 ```
 
-### 2. Swap Cost Calculation (swap_cost_calculator.py)
-
+### Desktop (Electron)
 ```
-For each bell assignment:
-1. Simulate hand assignments (even indices=left, odd=right)
-2. Walk through note timeline chronologically
-3. Count hand transitions (same hand needs different bell)
-4. Return transition count as swap cost
-
-Example:
-  Player has C4 (left), D4 (right), assign E4 (left)
-  Timeline: C4→D4→C4→D4→E4
-  Hands:    L→R→L→R→L
-  Swaps:    4 (each arrow is a swap)
+desktop/
+├── main.js                               # Main process with backend management
+├── preload.js                            # Secure IPC bridge
+├── assets/                               # Icons and branding
+├── e2e/                                  # Playwright E2E tests
+└── package.json                          # Build configuration
 ```
 
-### 3. Quality Scoring (arrangement_validator.py)
+## Technical Stack
 
+- **Desktop**: Electron with Electron Builder
+- **Frontend**: Next.js (App Router) with React
+- **Backend**: Flask with Python 3.8+
+- **Music Parsing**: mido (MIDI), music21 (MusicXML)
+- **Testing**: Playwright (E2E), pytest (unit/integration)
+- **Packaging**: PyInstaller (backend), electron-builder (desktop)
+
+## Constraints & Configuration
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| Min bells per player | 2 | Ensures each hand has at least one bell |
+| Max bells (beginner) | 2 | Limited capacity for beginners |
+| Max bells (intermediate) | 3 | Moderate capacity |
+| Max bells (experienced) | 5 | Full multi-bell capability |
+| Simultaneous bells | 2 per hand | Hard constraint |
+| Max file size | 5MB | Memory and performance limit |
+| Player range | 1-20 | Supports solo to large ensemble |
+| Default players | 8 | 2 experienced, 4 intermediate, 2 beginner |
+| Supported formats | MIDI (.mid, .midi), MusicXML (.xml, .musicxml) | |
+
+## Quality Score Components
+
+The system calculates a 0-100 quality score based on:
+1. **Distribution (25%)**: Even spread of bells across players
+2. **Occupancy (25%)**: Percentage of players utilized
+3. **Utilization (25%)**: Average bells per player vs capacity
+4. **Melody Coverage (25%)**: Percentage of melody notes assigned
+
+Typical scores range from 75-95 for well-optimized arrangements.
+
+## Test Results
+
+### E2E Tests (16/16 passing)
 ```
-Score = 0
+API Tests (5)
+├── Health check endpoint
+├── Arrangement generation workflow
+├── Multiple strategies comparison
+├── Invalid input handling
+└── CSV export functionality
 
-Distribution Score (0-20):
-  - Variance in bell counts across players
-  - Lower variance = higher score
-
-Occupancy Score (0-20):
-  - Percentage of players with bells
-  - 100% occupancy = 20 points
-
-Utilization Score (0-20):
-  - Average bells per player relative to capacity
-  - ~2 bells per player = good balance
-
-Melody Coverage (0-20):
-  - Percentage of melody notes assigned
-  - Full coverage = 20 points
-
-Hand Swap Efficiency (0-20): ← NEW
-  - Actual swaps calculated from note timeline
-  - Lower swaps = higher score
-  - Normalized against acceptable threshold (5 swaps/player)
-
-Range: 0-100 (normalized)
-Typical scores: 75-93 for well-optimized arrangements
-```
-
-## Data Structures
-
-### Music Data
-```python
-{
-    'notes': [{pitch, velocity, time, offset, duration}],
-    'unique_notes': [60, 62, 64, ...],
-    'note_count': int,
-    'melody_pitches': [60, 62, 64],
-    'harmony_pitches': [48, 50, 52],
-    'frequencies': {60: 5, 62: 3, ...},
-    'format': 'midi' | 'musicxml',
-    'tempo': int
-}
-```
-
-### Arrangement (Multi-Bell)
-```python
-{
-    'Player 1': {
-        'bells': ['C4', 'E4', 'G4'],
-        'left_hand': ['C4', 'G4'],
-        'right_hand': ['E4']
-    },
-    'Player 2': {
-        'bells': ['D4', 'F4'],
-        'left_hand': ['D4'],
-        'right_hand': ['F4']
-    }
-}
+UI Tests (11)
+├── Application launch
+├── File upload workflow
+├── Player configuration
+├── Arrangement generation
+├── Result display
+├── Strategy switching
+├── CSV export
+└── Error handling
 ```
 
-## Constraints & Limits
+### Backend Tests
+- 13 SwapCounter unit tests (hand transfer calculation)
+- 11 ExportFormatter unit tests (CSV formatting)
+- 2 multi-bell integration tests
 
-| Constraint | Value | Reason |
-|-----------|-------|--------|
-| Min bells per player | 2 | Hand balance (1 per hand) |
-| Max bells per player | 8 | Handbell playing limit |
-| Max file size | 5MB | Memory/performance |
-| Max players | 20 | Reasonable ensemble size |
-| Min players | 1 | Solo play possible |
-| Default tempo | 120 BPM | If file missing tempo |
-| Hand gap threshold | 1.0 beats | Minimum time to swap bells |
+**Status**: All tests passing consistently
 
-## Test Results Summary
+## Deployment
 
-### Unit Tests (test_swap_cost.py)
-✅ 7/7 tests passing
-- Frequency calculation
-- Temporal gap analysis
-- Single note edge cases
-- Late appearance optimization
-- Alternating pattern swaps
-- Comprehensive scoring
-- At-capacity validation
+### Desktop Application
+- **Windows**: Production installer and portable executable ready
+- **macOS**: DMG packaging configured (awaiting icon generation on macOS)
+- **Linux**: AppImage and .deb packaging configured
 
-### Integration Tests
-✅ test_multibelle.py - Basic multi-bell functionality (93.4/100 score)
-✅ test_sample_music.py - Real MIDI (18 notes, 8 players, 75/100 score)
-✅ test_swap_optimization.py - Swap cost optimization workflow (84.2/100 score)
+### Web Application
+- **Development**: `npm run dev` for frontend, `python run.py` for backend
+- **Production**: Next.js production build with Flask backend
+- **Deployment**: Can be deployed to any Node.js + Python hosting platform
 
-### System Status
-✅ Backend: Initializes successfully
-✅ Frontend: Builds successfully (63.5 kB gzipped)
-✅ All constraints maintained
-✅ No regressions in existing functionality
+## Known Limitations
 
-## What Works
+1. **File size**: 5MB limit for performance
+2. **Bell count**: System adds players if unique pitches exceed capacity
+3. **Timing**: Assumes players can see the music and prepare for bell swaps
+4. **Format support**: MIDI and MusicXML only (no ABC, MusicJSON, etc.)
 
-✅ MIDI/MusicXML parsing with proper duration, tempo, and timing  
-✅ Melody/harmony extraction with frequency analysis  
-✅ 3 distinct arrangement strategies (experienced_first, balanced, min_transitions)  
-✅ Conflict resolution, balancing, and experience optimization  
-✅ Multi-bell assignment (2-8 bells per player) with hand tracking  
-✅ Hand swap cost calculation and optimization  
-✅ Comprehensive validation with 5-component quality scoring  
-✅ Sustainability analysis with recommendations  
-✅ Multi-arrangement generation and ranking  
-✅ Enhanced frontend with hand breakdown visualization  
-✅ Proper error handling throughout  
-✅ Logging at key points  
-✅ Safe file handling with UUIDs  
+## Future Enhancements (Backlog)
 
-## What's Next (Phase 6 & Beyond)
-
-### Phase 6: Output & Export
-- [ ] PDF generation with score notation
-- [ ] Player parts (individual assignments)
-- [ ] Sheet music export (MusicXML/PDF)
-- [ ] Print-friendly formats
-
-### Phase 7: Hand Validation (Future Phases)
-- [ ] Hand timing gap validation (HAND_GAP_THRESHOLD_BEATS)
-- [ ] Hand conflict detection and resolution
-- [ ] Hand transfer tracking in output metadata
-- [ ] Hand preference configuration (left/right handed players)
-
-### Phase 8: Testing & Polish
-- [ ] Comprehensive unit test suite
-- [ ] E2E tests for user flow
-- [ ] Sample MIDI library
-- [ ] Performance benchmarking
-
-### Phase 9: Advanced Features
-- [ ] Difficulty rating per arrangement
-- [ ] Audio playback preview
 - [ ] Arrangement editor (manual adjustments)
+- [ ] PDF export with score notation
+- [ ] Difficulty rating per arrangement
 - [ ] Save/load arrangements
-- [ ] User accounts and history
+- [ ] macOS/Linux desktop app testing and distribution
 
-## Performance Characteristics
+## Development Phases Completed
 
-**Swap Cost Calculation**: O(N) where N = number of notes
-**Bell Assignment**: O(M × P) where M = unique notes, P = players
-**Overall**: <500ms for typical files (20 notes, 10 players)
+1. ✅ **Phase 1-2**: Core infrastructure and music parsing
+2. ✅ **Phase 3**: Algorithm implementation with 3 strategies
+3. ✅ **Phase 4**: Multi-bell assignment with hand optimization
+4. ✅ **Phase 5**: Hand swap optimization
+5. ✅ **Phase 6**: Experience-level constraints and player expansion
+6. ✅ **Phase 6.5**: Next.js 15 migration from CRA
+7. ✅ **Phase 7**: CSV export with accurate swap counting
+8. ✅ **Phase 8**: Desktop application with Electron
+9. ✅ **Phase 8.5**: Icons and branding
+10. ✅ **Phase 9**: Comprehensive E2E testing
 
-**Example timing** (sample MIDI, 18 notes, 8 players):
-- Parsing: 25ms
-- Melody/harmony extraction: 15ms
-- Assignment (3 strategies): 50ms
-- Validation & scoring: 25ms
-- **Total: 115ms**
+## Project Health
 
-## Deployment Readiness
+- **Code Quality**: Production-ready with comprehensive error handling
+- **Test Coverage**: 100% E2E test pass rate, extensive backend tests
+- **Documentation**: Complete with algorithm design docs and user guides
+- **Performance**: <500ms for typical files (20 notes, 10 players)
+- **Stability**: No known critical bugs
+- **Maintenance**: Dependency updates tested and verified
 
-✅ Code quality: production-ready with comprehensive error handling
-✅ Test coverage: unit + integration tests all passing
-✅ Documentation: complete with design specifications
-✅ Performance: optimized for typical music files
-✅ Backward compatibility: no breaking changes
-✅ Constraints: all maintained and enforced
-✅ Edge cases: handled gracefully
+## License & Attribution
 
-## Files Summary
+- **License**: MIT License
+- **Copyright**: © 2026 Marie Danenhower
+- **Repository**: https://github.com/paintcode/vibebells
+- **Version**: 1.0.0
 
-### Created (Phase 5)
-- `backend/app/services/swap_cost_calculator.py` (7,267 bytes)
-- `backend/test_swap_cost.py` (6,486 bytes)
-- `backend/test_swap_optimization.py` (7,679 bytes)
-- `PHASE5_HAND_SWAP_OPTIMIZATION.md` (design spec)
-- `PHASE5_IMPLEMENTATION.md` (implementation details)
-- `PHASE5_SUMMARY.md` (quick reference)
+---
 
-### Modified (Phase 5)
-- `backend/app/services/bell_assignment.py`
-- `backend/app/services/music_parser.py`
-- `backend/app/services/arrangement_validator.py`
-- `backend/app/services/arrangement_generator.py`
-
-### Previously Created (Phases 1-4)
-- 10 backend services (750+ lines)
-- 3 frontend components (300+ lines)
-- 5 phase documentation files
-- Comprehensive error handling
-- Full validation framework
-
-## Conclusion
-
-**Phase 5 Complete**: Hand swap optimization successfully implemented with comprehensive testing and validation. The system now makes intelligent decisions about multi-bell assignments by considering actual performance playability through swap cost analysis.
-
-**Total Implementation:**
-- 10 backend services (1,200+ lines)
-- 1 optimization utility (7,267 bytes)
-- 3 frontend components (300+ lines)
-- 20+ tests (unit + integration)
-- 6 documentation files
-- Complete error handling and validation
-
-**Status**: ✅ PRODUCTION-READY - Ready for Phase 6 (Output & Export)
-
+**Status**: ✅ PRODUCTION READY - Desktop and web applications fully functional and tested
