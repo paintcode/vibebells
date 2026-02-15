@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './page.css';
 import FileUpload from './components/FileUpload';
 import PlayerConfig from './components/PlayerConfig';
@@ -24,7 +24,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
-  const arrangementsRef = React.useRef(null);
+  const arrangementsRef = useRef(null);
 
   // Register menu event listener for Electron
   useEffect(() => {
