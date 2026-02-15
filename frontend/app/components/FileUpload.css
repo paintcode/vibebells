@@ -28,6 +28,11 @@
   transform: translateY(0);
 }
 
+.file-input-label:focus-within {
+  outline: 2px solid #8B2942;
+  outline-offset: 2px;
+}
+
 .file-help {
   margin-top: 0.75rem;
   color: #666;
