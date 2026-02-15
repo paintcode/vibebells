@@ -482,7 +482,9 @@ ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
     filters: [
-      { name: 'MIDI Files', extensions: ['mid', 'midi'] }
+      { name: 'Music Files', extensions: ['mid', 'midi', 'musicxml', 'xml'] },
+      { name: 'MIDI Files', extensions: ['mid', 'midi'] },
+      { name: 'MusicXML Files', extensions: ['musicxml', 'xml'] }
     ]
   });
   

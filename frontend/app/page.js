@@ -51,8 +51,16 @@ export default function Home() {
         
         // Convert array back to Uint8Array and create blob
         const fileName = filePath.split(/[\\/]/).pop();
-        const blob = new Blob([new Uint8Array(result.data)], { type: 'audio/midi' });
-        const file = new File([blob], fileName, { type: 'audio/midi' });
+        const fileExt = fileName.split('.').pop().toLowerCase();
+        
+        // Determine MIME type based on extension
+        let mimeType = 'audio/midi';
+        if (fileExt === 'xml' || fileExt === 'musicxml') {
+          mimeType = 'application/vnd.recordare.musicxml+xml';
+        }
+        
+        const blob = new Blob([new Uint8Array(result.data)], { type: mimeType });
+        const file = new File([blob], fileName, { type: mimeType });
         handleFileUpload(file);
       }
     } catch (error) {
@@ -170,14 +178,17 @@ export default function Home() {
           <section className="section">
             <h2>1. Upload Music File</h2>
             {isElectron() && (
-              <button 
-                className="electron-file-btn"
-                onClick={handleElectronFileOpen}
-              >
-                Choose File...
-              </button>
+              <>
+                <button 
+                  className="electron-file-btn"
+                  onClick={handleElectronFileOpen}
+                >
+                  Choose File
+                </button>
+                <p className="file-help">Supported formats: MIDI (.mid), MusicXML (.musicxml)</p>
+              </>
             )}
-            <FileUpload onFileUpload={handleFileUpload} />
+            {!isElectron() && <FileUpload onFileUpload={handleFileUpload} />}
             {file && <p className="file-name">Selected: {file.name}</p>}
           </section>
 
