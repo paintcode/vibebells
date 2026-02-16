@@ -19,15 +19,16 @@ backend/
 │   │   └── test_experience_constraints.py  # Experience constraints (5 tests)
 │   └── integration/             # Integration tests (end-to-end workflows)
 │       ├── __init__.py
-│       ├── test_complete_system.py       # Full system test
-│       ├── test_frequency_assignment.py  # Frequency-based assignment
-│       ├── test_multibelle.py            # Multi-bell functionality
-│       ├── test_player_expansion.py      # Player expansion logic
-│       ├── test_sample_music.py          # Real music file test
-│       └── test_swap_optimization.py     # Hand swap optimization
-└── manual_tests/                # Manual verification scripts (not automated)
-    ├── test_comprehensive_final.py        # Manual verification
-    └── test_fixed_balanced_strategy.py    # Edge case verification
+│       ├── test_comprehensive_algorithm.py  # Complete algorithm tests (8 tests)
+│       ├── test_complete_system.py          # Full system test
+│       ├── test_frequency_assignment.py     # Frequency-based assignment
+│       ├── test_multibelle.py               # Multi-bell functionality
+│       ├── test_player_expansion.py         # Player expansion logic
+│       ├── test_sample_music.py             # Real music file test
+│       └── test_swap_optimization.py        # Hand swap optimization
+└── manual_tests/                # Manual verification scripts (deprecated)
+    ├── test_comprehensive_final.py          # Replaced by test_comprehensive_algorithm.py
+    └── test_fixed_balanced_strategy.py      # Replaced by test_comprehensive_algorithm.py
 ```
 
 ## Running Tests
@@ -99,10 +100,15 @@ python -m unittest discover -s tests/integration -v
 - Player expansion when capacity insufficient
 - Mixed experience level handling
 
-### Integration Tests (6 tests)
+### Integration Tests (14 tests)
 
 **Purpose**: Test complete workflows with multiple components
 
+- **test_comprehensive_algorithm.py** (8 tests) - NEW! Replaces manual tests
+  - Experience-level constraints enforcement (2 tests)
+  - Player expansion logic (2 tests)
+  - Balanced strategy behavior (2 tests)
+  - Cross-strategy validation (2 tests)
 - **test_complete_system.py**: Full end-to-end system test with real music
 - **test_frequency_assignment.py**: Frequency-based bell assignment optimization
 - **test_multibelle.py**: Multi-bell assignment with conflict resolution
@@ -110,12 +116,14 @@ python -m unittest discover -s tests/integration -v
 - **test_sample_music.py**: Real sample music file processing
 - **test_swap_optimization.py**: Hand swap optimization (min_transitions strategy)
 
-### Manual Tests
+### Manual Tests (deprecated)
 
-**Purpose**: Interactive verification and debugging tools (not run by pytest)
+**Purpose**: Interactive verification and debugging tools (replaced by automated tests)
 
-- **test_comprehensive_final.py**: Manual verification script with console output
-- **test_fixed_balanced_strategy.py**: Edge case debugging (all-beginner scenario)
+- **test_comprehensive_final.py**: ~~Manual verification script~~ → Use `test_comprehensive_algorithm.py`
+- **test_fixed_balanced_strategy.py**: ~~Edge case debugging~~ → Use `test_comprehensive_algorithm.py`
+
+These manual tests are no longer needed as their scenarios are now covered by automated tests.
 
 ## Test Coverage
 
@@ -123,16 +131,20 @@ python -m unittest discover -s tests/integration -v
 - ✅ SwapCounter: Comprehensive (24 tests)
 - ✅ ExportFormatter: Comprehensive (12 tests in test_services.py)
 - ✅ SwapCostCalculator: Good coverage (7 tests)
-- ✅ Experience constraints: Basic coverage (5 tests)
-- ✅ Bell assignment strategies: Integration tests (6 tests)
+- ✅ Experience constraints: Comprehensive (13 tests total)
+  - Unit tests: 5 tests in test_experience_constraints.py
+  - Integration tests: 8 tests in test_comprehensive_algorithm.py
+- ✅ Bell assignment strategies: Comprehensive (14 integration tests)
 
 ### Key Algorithms Tested
 - ✅ Greedy lookahead for bell swaps
 - ✅ Frequency-based bell assignment
-- ✅ Experience-level constraint enforcement
-- ✅ Player expansion logic
+- ✅ Experience-level constraint enforcement (all strategies)
+- ✅ Player expansion logic (when capacity insufficient)
 - ✅ Conflict resolution
 - ✅ CSV export formatting
+- ✅ Balanced strategy edge cases (all-beginner scenario)
+- ✅ Cross-strategy validation (all respect constraints)
 
 ### Areas Without Automated Tests
 - ⚠️ MIDI parsing (music21 wrapper)
