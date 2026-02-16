@@ -1,8 +1,27 @@
 # Project Status: Production Ready ✅
 
-## Current Status: Vibebells 1.0.0
+## Current Status: Vibebells 1.0.1
 
 Vibebells is a complete, production-ready handbell arrangement generator available as both a desktop application and web application. The system generates optimized arrangements from MIDI and MusicXML files with experience-based player configuration, quality scoring, and CSV export capabilities.
+
+## Recent Milestones
+
+## Version History
+
+### v1.0.1 (February 16, 2026)
+**Security patch**
+- Fixed Flask debug mode security issue (was always enabled)
+- Backend now only enables debug mode in development environment
+- Desktop executable verified to run with debug mode disabled
+
+### v1.0.0 (February 15, 2026)
+**Initial production release**
+- Complete desktop and web application
+- Three bell assignment strategies with quality scoring
+- Multi-bell support with hand optimization
+- CSV export with accurate swap counting
+- Professional branding and icons
+- 16/16 E2E tests passing (100% coverage)
 
 ## Recent Milestones
 

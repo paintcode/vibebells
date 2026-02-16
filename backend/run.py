@@ -5,4 +5,6 @@ import os
 app = create_app(os.getenv('FLASK_ENV', 'development'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Only enable debug mode in development, never in production
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    app.run(debug=debug_mode, port=5000)
