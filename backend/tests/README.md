@@ -91,9 +91,38 @@ python -m unittest discover -s tests/integration -v
 
 ## Test Categories
 
-### Unit Tests (36 tests)
+### Unit Tests (77 tests)
 
 **Purpose**: Test individual functions and classes in isolation
+
+**test_file_handler.py** (15 tests) - NEW!
+- FileHandler: File validation, saving, and cleanup
+  - File type detection (.mid, .midi, .xml, .musicxml)
+  - Invalid extension rejection
+  - UUID filename generation
+  - File save operations and error handling
+  - File deletion (existing and nonexistent files)
+
+**test_midi_parser.py** (12 tests) - NEW!
+- MIDIParser: MIDI file parsing and error handling
+  - Valid MIDI file parsing with tempo and notes
+  - Empty MIDI files (no notes)
+  - Corrupted/malformed MIDI files
+  - Missing tempo (default 120 BPM)
+  - Note On without matching Note Off
+  - Pitch to note name conversion (C4, A4, sharps, octaves)
+  - Required fields validation
+
+**test_musicxml_parser.py** (14 tests) - NEW!
+- MusicXMLParser: MusicXML file parsing and error handling
+  - Valid MusicXML files with notes and tempo
+  - MusicXML files with chords (extracts individual notes)
+  - Empty MusicXML files (no notes)
+  - Corrupted/malformed XML files
+  - Invalid XML structure
+  - Missing tempo (default 120 BPM)
+  - Pitch to note name conversion
+  - Chord information structure validation
 
 **test_services.py** (24 tests)
 - SwapCounter: Greedy algorithm for bell swap counting
@@ -118,7 +147,7 @@ python -m unittest discover -s tests/integration -v
 - Player expansion when capacity insufficient
 - Mixed experience level handling
 
-### Integration Tests (14 tests)
+### Integration Tests (15 tests)
 
 **Purpose**: Test complete workflows with multiple components
 
@@ -146,13 +175,26 @@ These manual tests are no longer needed as their scenarios are now covered by au
 ## Test Coverage
 
 ### Core Services
+- ✅ **FileHandler: Comprehensive (15 tests) - NEW!**
+- ✅ **MIDIParser: Comprehensive (12 tests) - NEW!**
+- ✅ **MusicXMLParser: Comprehensive (14 tests) - NEW!**
 - ✅ SwapCounter: Comprehensive (24 tests)
 - ✅ ExportFormatter: Comprehensive (12 tests in test_services.py)
 - ✅ SwapCostCalculator: Good coverage (7 tests)
 - ✅ Experience constraints: Comprehensive (13 tests total)
   - Unit tests: 5 tests in test_experience_constraints.py
   - Integration tests: 8 tests in test_comprehensive_algorithm.py
-- ✅ Bell assignment strategies: Comprehensive (14 integration tests)
+- ✅ Bell assignment strategies: Comprehensive (15 integration tests)
+
+### File Parsing (NEW - Phase 1 Complete)
+- ✅ File extension validation
+- ✅ UUID filename generation
+- ✅ Corrupted/malformed file handling
+- ✅ Empty file detection
+- ✅ Missing metadata (tempo defaults)
+- ✅ MIDI Note On without Note Off
+- ✅ MusicXML chord extraction
+- ✅ Invalid XML structure detection
 
 ### Key Algorithms Tested
 - ✅ Greedy lookahead for bell swaps

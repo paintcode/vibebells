@@ -140,15 +140,63 @@ Each service is designed to be testable in isolation with well-defined inputs/ou
 
 ### Backend Test Organization
 Tests are organized following Python best practices in `backend/tests/`:
-- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes
+- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes (77 tests)
+  - `test_file_handler.py` - FileHandler (15 tests)
+  - `test_midi_parser.py` - MIDIParser (12 tests)
+  - `test_musicxml_parser.py` - MusicXMLParser (14 tests)
   - `test_services.py` - SwapCounter, ExportFormatter (24 tests)
   - `test_swap_cost.py` - SwapCostCalculator (7 tests)
   - `test_experience_constraints.py` - Experience constraints (5 tests)
-- **Integration tests** (`tests/integration/`): End-to-end workflow tests
-  - `test_complete_system.py`, `test_frequency_assignment.py`, etc. (6 tests)
-- **Manual tests** (`manual_tests/`): Interactive verification scripts (not run by pytest)
+- **Integration tests** (`tests/integration/`): End-to-end workflow tests (15 tests)
+  - `test_comprehensive_algorithm.py`, `test_complete_system.py`, etc.
+- **Manual tests** (`manual_tests/`): Deprecated scripts replaced by automated tests
 
-Run with: `pytest tests/` (all), `pytest tests/unit/` (unit only), `pytest tests/integration/` (integration only)
+Run with: `cd backend; python -m pytest tests/` (requires venv activation or use `python -m pytest`)
+
+### Backend Test Style Guide
+**Preferred Style:** Plain pytest functions (not fixtures, not classes)
+
+The codebase has two existing styles:
+1. **unittest.TestCase** (legacy) - `test_services.py` only
+2. **Plain pytest functions** (preferred) - All other tests
+
+**For new tests, use plain pytest functions:**
+```python
+# ✅ DO: Plain functions with helper functions
+def _create_test_data():
+    """Helper to create test data"""
+    # Setup code
+    return data
+
+def test_feature():
+    """Test description"""
+    data = _create_test_data()
+    try:
+        result = function_under_test(data)
+        assert result == expected
+    finally:
+        # Cleanup if needed
+        cleanup(data)
+
+# ❌ DON'T: pytest fixtures or classes
+@pytest.fixture  # Avoid - inconsistent with existing tests
+def test_data():
+    return data
+
+class TestFeature:  # Avoid - unless using unittest.TestCase
+    def test_something(self):
+        pass
+```
+
+**When to use helper functions:**
+- Creating test files (MIDI, MusicXML)
+- Generating mock data
+- Complex setup that's reused across multiple tests
+- Name with leading underscore: `_create_helper_data()`
+
+**When to use inline setup:**
+- Simple, one-line setup
+- Test-specific data that's not reused
 
 ### Frontend Environment Detection
 The frontend detects whether it's running in Electron or a browser:
