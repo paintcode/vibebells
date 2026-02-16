@@ -65,13 +65,13 @@ test.describe('Vibebells Desktop Application', () => {
   });
   
   test('should display file upload section', async () => {
-    // Check for file upload UI
-    const fileInput = window.locator('input[type="file"]');
-    await expect(fileInput).toBeAttached();
+    // Check for file upload UI (Electron uses native dialogs, so we check for the button)
+    const chooseFileButton = window.locator('button:has-text("Choose File")');
+    await expect(chooseFileButton).toBeVisible();
     
-    // Check for upload instructions or label
-    const uploadSection = window.locator('text=Choose File').or(window.locator('text=Upload'));
-    await expect(uploadSection.first()).toBeVisible();
+    // Check for upload instructions
+    const uploadInstructions = window.locator('text=Supported formats: MIDI');
+    await expect(uploadInstructions).toBeVisible();
   });
   
   test('should display player configuration section', async () => {
