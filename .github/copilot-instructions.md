@@ -215,23 +215,31 @@ When adding new Python dependencies, update `backend/vibebells-backend.spec` wit
 ### CSV Injection Prevention
 The CSV export in `export_formatter.py` sanitizes cell values to prevent formula injection. When adding new exported fields, use the `_sanitize_csv_value()` helper.
 
+### Version Numbers - Use Dynamic References
+**Best practice:** Avoid hardcoding version numbers. Instead, read from package.json:
+- **Electron**: Use `app.getVersion()` to read from `desktop/package.json`
+- **Example**: `'Version ${app.getVersion()}\n\n'` in About dialog
+
+This ensures version numbers stay in sync automatically - you only need to update package.json files.
+
 ## Version Management
 
 When incrementing the version number (e.g., 1.0.0 → 1.0.1), update these files:
 
-1. **desktop/package.json** - `"version": "x.y.z"`
-2. **frontend/package.json** - `"version": "x.y.z"`
-3. **desktop/main.js** - About dialog: `'Version x.y.z\n\n'`
-4. **PROJECT_STATUS.md** - Update version in:
+1. **desktop/package.json** - `"version": "x.y.z"` (required)
+2. **frontend/package.json** - `"version": "x.y.z"` (required)
+3. **PROJECT_STATUS.md** - Update version in:
    - `## Current Status: Vibebells x.y.z`
    - Version history section (add new entry)
    - `- **Version**: x.y.z` (License & Attribution section)
-5. **README.md** - Download file names (if applicable):
+4. **README.md** - Download file names (if applicable):
    - `Vibebells Setup x.y.z.exe`
    - `Vibebells x.y.z.exe`
    - `Vibebells-x.y.z.dmg`
    - `Vibebells-x.y.z.AppImage`
-6. **desktop/README.md** - Build output file names (if applicable)
+5. **desktop/README.md** - Build output file names (if applicable)
+
+**Note:** The About dialog in `desktop/main.js` uses `app.getVersion()` and updates automatically.
 
 After updating package.json files, run:
 ```bash
