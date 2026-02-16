@@ -6,11 +6,6 @@ Covers experience-level constraints, player expansion, and strategy behavior.
 """
 
 import pytest
-import sys
-import os
-
-# Add backend to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.services.bell_assignment import BellAssignmentAlgorithm
 from app.services.arrangement_generator import ArrangementGenerator
