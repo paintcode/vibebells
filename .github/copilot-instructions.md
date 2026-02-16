@@ -19,10 +19,12 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 
 # Run tests
-pytest tests/                           # All tests
-pytest test_services.py                 # Single file
-pytest test_services.py::test_function  # Single test
-pytest -v                               # Verbose output
+pytest tests/                              # All tests
+pytest tests/unit/                         # Unit tests only
+pytest tests/integration/                  # Integration tests only
+pytest tests/unit/test_services.py         # Single file
+pytest tests/unit/test_services.py::TestSwapCounter::test_no_notes  # Single test
+pytest -v                                  # Verbose output
 
 # Run server
 python run.py  # Starts on http://localhost:5000
@@ -132,6 +134,18 @@ Services follow a pipeline pattern in `backend/app/services/`:
 12. `routes.py` - Flask API endpoints
 
 Each service is designed to be testable in isolation with well-defined inputs/outputs.
+
+### Backend Test Organization
+Tests are organized following Python best practices in `backend/tests/`:
+- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes
+  - `test_services.py` - SwapCounter, ExportFormatter (24 tests)
+  - `test_swap_cost.py` - SwapCostCalculator (7 tests)
+  - `test_experience_constraints.py` - Experience constraints (5 tests)
+- **Integration tests** (`tests/integration/`): End-to-end workflow tests
+  - `test_complete_system.py`, `test_frequency_assignment.py`, etc. (6 tests)
+- **Manual tests** (`manual_tests/`): Interactive verification scripts (not run by pytest)
+
+Run with: `pytest tests/` (all), `pytest tests/unit/` (unit only), `pytest tests/integration/` (integration only)
 
 ### Frontend Environment Detection
 The frontend detects whether it's running in Electron or a browser:
