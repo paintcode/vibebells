@@ -214,3 +214,29 @@ When adding new Python dependencies, update `backend/vibebells-backend.spec` wit
 
 ### CSV Injection Prevention
 The CSV export in `export_formatter.py` sanitizes cell values to prevent formula injection. When adding new exported fields, use the `_sanitize_csv_value()` helper.
+
+## Version Management
+
+When incrementing the version number (e.g., 1.0.0 → 1.0.1), update these files:
+
+1. **desktop/package.json** - `"version": "x.y.z"`
+2. **frontend/package.json** - `"version": "x.y.z"`
+3. **desktop/main.js** - About dialog: `'Version x.y.z\n\n'`
+4. **PROJECT_STATUS.md** - Update version in:
+   - `## Current Status: Vibebells x.y.z`
+   - Version history section (add new entry)
+   - `- **Version**: x.y.z` (License & Attribution section)
+5. **README.md** - Download file names (if applicable):
+   - `Vibebells Setup x.y.z.exe`
+   - `Vibebells x.y.z.exe`
+   - `Vibebells-x.y.z.dmg`
+   - `Vibebells-x.y.z.AppImage`
+6. **desktop/README.md** - Build output file names (if applicable)
+
+After updating package.json files, run:
+```bash
+cd desktop && npm install --package-lock-only
+cd ../frontend && npm install --package-lock-only
+```
+
+This updates the package-lock.json files to match.
