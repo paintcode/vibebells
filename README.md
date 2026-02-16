@@ -34,9 +34,9 @@ A desktop and web application that generates handbell arrangements for songs. Up
 
 Download the latest release for your platform:
 
-- **Windows**: `Vibebells Setup 1.0.0.exe` or `Vibebells 1.0.0.exe` (portable)
-- **macOS**: `Vibebells-1.0.0.dmg` (coming soon)
-- **Linux**: `Vibebells-1.0.0.AppImage` or `.deb` (coming soon)
+- **Windows**: `Vibebells Setup 1.0.1.exe` or `Vibebells 1.0.1.exe` (portable)
+- **macOS**: `Vibebells-1.0.1.dmg` (coming soon)
+- **Linux**: `Vibebells-1.0.1.AppImage` or `.deb` (coming soon)
 
 Double-click to install and run. The app includes a bundled Python backend (no installation needed), native file dialogs and menus, and works completely offline.
 

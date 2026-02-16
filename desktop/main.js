@@ -391,7 +391,7 @@ async function createWindow() {
               icon: icon,
               detail: 
                 'Handbell Arrangement Generator\n' +
-                'Version 1.0.0\n\n' +
+                `Version ${app.getVersion()}\n\n` +
                 'Made by PaintCode\n' +
                 'Copyright © 2026 Marie Danenhower\n' +
                 'Licensed under the MIT License\n\n' +

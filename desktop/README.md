@@ -54,7 +54,7 @@ This script automatically:
 3. Copies the frontend to desktop/build
 4. Packages the Electron app
 
-Output: `desktop/dist/Vibebells Setup 1.0.0.exe` (installer) and `Vibebells 1.0.0.exe` (portable)
+Output: `desktop/dist/Vibebells Setup 1.0.1.exe` (installer) and `Vibebells 1.0.1.exe` (portable)
 
 ### Manual Build Steps
 
@@ -73,7 +73,7 @@ cd ..\desktop
 npm run build:win
 ```
 
-Output: `desktop/dist/Vibebells Setup 1.0.0.exe` (installer) and `Vibebells 1.0.0.exe` (portable)
+Output: `desktop/dist/Vibebells Setup 1.0.1.exe` (installer) and `Vibebells 1.0.1.exe` (portable)
 
 ### macOS Build (on macOS)
 
@@ -90,7 +90,7 @@ cd ../desktop
 npm run build:mac
 ```
 
-Output: `desktop/dist/Vibebells-1.0.0.dmg`
+Output: `desktop/dist/Vibebells-1.0.1.dmg`
 
 ### Linux Build
 
@@ -107,7 +107,7 @@ cd ../desktop
 npm run build:linux
 ```
 
-Output: `desktop/dist/Vibebells-1.0.0.AppImage` and `.deb`
+Output: `desktop/dist/Vibebells-1.0.1.AppImage` and `.deb`
 
 ## Features
 

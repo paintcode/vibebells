@@ -254,7 +254,7 @@ UI Tests (11)
 - **License**: MIT License
 - **Copyright**: © 2026 Marie Danenhower
 - **Repository**: https://github.com/paintcode/vibebells
-- **Version**: 1.0.0
+- **Version**: 1.0.1
 
 ---
 
