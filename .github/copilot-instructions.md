@@ -18,13 +18,16 @@ venv\Scripts\activate  # Windows
 source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 
-# Run tests
+# Run tests (after activating venv or use python -m pytest)
 pytest tests/                              # All tests
 pytest tests/unit/                         # Unit tests only
 pytest tests/integration/                  # Integration tests only
 pytest tests/unit/test_services.py         # Single file
 pytest tests/unit/test_services.py::TestSwapCounter::test_no_notes  # Single test
 pytest -v                                  # Verbose output
+
+# Or without activating venv:
+python -m pytest tests/ -v                 # Use python -m pytest directly
 
 # Run server
 python run.py  # Starts on http://localhost:5000

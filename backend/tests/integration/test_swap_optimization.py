@@ -140,7 +140,7 @@ def test_swap_cost_optimization():
         print("\n🎉 All players have minimum 2 bells!")
     else:
         print("\n❌ Some players violate minimum bell requirement")
-        return False
+        assert False, "Some players violate minimum bell requirement"
     
     # Test 5: Verify swap optimization worked
     print("\n🔍 Swap Cost Optimization Verification:")
@@ -177,19 +177,13 @@ def test_swap_cost_optimization():
     print("\n" + "=" * 70)
     print("✅ Phase 5 Hand Swap Optimization Test PASSED")
     print("=" * 70 + "\n")
-    
-    return True
 
 
 if __name__ == '__main__':
     try:
-        success = test_swap_cost_optimization()
-        if success:
-            print("All tests passed!\n")
-            sys.exit(0)
-        else:
-            print("Some tests failed!\n")
-            sys.exit(1)
+        test_swap_cost_optimization()
+        print("All tests passed!\n")
+        sys.exit(0)
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}\n")
         import traceback

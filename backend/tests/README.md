@@ -33,40 +33,58 @@ backend/
 
 ## Running Tests
 
+**Prerequisites:**
+1. You must be in the `backend/` directory (not the project root)
+2. You must activate the virtual environment **OR** use the venv python directly
+
 ### All Tests
 
 ```bash
 cd backend
+
+# Option 1: Activate venv first, then use pytest
+source venv/bin/activate  # macOS/Linux
+venv\Scripts\activate     # Windows
 pytest tests/ -v
+
+# Option 2: Use venv python directly (no activation needed)
+python -m pytest tests/ -v                    # If venv is active
+./venv/Scripts/python.exe -m pytest tests/ -v # Windows without venv activation
+./venv/bin/python -m pytest tests/ -v         # macOS/Linux without venv activation
 ```
 
 ### Unit Tests Only
 
 ```bash
-pytest tests/unit/ -v
+cd backend
+python -m pytest tests/unit/ -v
 ```
 
 ### Integration Tests Only
 
 ```bash
-pytest tests/integration/ -v
+cd backend
+python -m pytest tests/integration/ -v
 ```
 
 ### Specific Test File
 
 ```bash
-pytest tests/unit/test_services.py -v
+cd backend
+python -m pytest tests/unit/test_services.py -v
 ```
 
 ### Specific Test Function
 
 ```bash
-pytest tests/unit/test_services.py::TestSwapCounter::test_three_unique_pitches_simple -v
+cd backend
+python -m pytest tests/unit/test_services.py::TestSwapCounter::test_three_unique_pitches_simple -v
 ```
 
 ### Using unittest (alternative)
 
 ```bash
+cd backend
 python -m unittest discover -s tests/unit -v
 python -m unittest discover -s tests/integration -v
 ```

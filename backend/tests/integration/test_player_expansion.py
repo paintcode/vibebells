@@ -103,11 +103,8 @@ def test_insufficient_players_expansion():
         
         if all_valid:
             print(f"\n✓ All players within experience-level limits")
-        
-        return True
     else:
         print("✓ No expansion needed (capacity sufficient)")
-        return False
 
 
 def test_expansion_notification():
