@@ -18,11 +18,16 @@ venv\Scripts\activate  # Windows
 source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 
-# Run tests
-pytest tests/                           # All tests
-pytest test_services.py                 # Single file
-pytest test_services.py::test_function  # Single test
-pytest -v                               # Verbose output
+# Run tests (after activating venv or use python -m pytest)
+pytest tests/                              # All tests
+pytest tests/unit/                         # Unit tests only
+pytest tests/integration/                  # Integration tests only
+pytest tests/unit/test_services.py         # Single file
+pytest tests/unit/test_services.py::TestSwapCounter::test_no_notes  # Single test
+pytest -v                                  # Verbose output
+
+# Or without activating venv:
+python -m pytest tests/ -v                 # Use python -m pytest directly
 
 # Run server
 python run.py  # Starts on http://localhost:5000
@@ -132,6 +137,66 @@ Services follow a pipeline pattern in `backend/app/services/`:
 12. `routes.py` - Flask API endpoints
 
 Each service is designed to be testable in isolation with well-defined inputs/outputs.
+
+### Backend Test Organization
+Tests are organized following Python best practices in `backend/tests/`:
+- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes (77 tests)
+  - `test_file_handler.py` - FileHandler (15 tests)
+  - `test_midi_parser.py` - MIDIParser (12 tests)
+  - `test_musicxml_parser.py` - MusicXMLParser (14 tests)
+  - `test_services.py` - SwapCounter, ExportFormatter (24 tests)
+  - `test_swap_cost.py` - SwapCostCalculator (7 tests)
+  - `test_experience_constraints.py` - Experience constraints (5 tests)
+- **Integration tests** (`tests/integration/`): End-to-end workflow tests (15 tests)
+  - `test_comprehensive_algorithm.py`, `test_complete_system.py`, etc.
+- **Manual tests** (`manual_tests/`): Deprecated scripts replaced by automated tests
+
+Run with: `cd backend; python -m pytest tests/` (requires venv activation or use `python -m pytest`)
+
+### Backend Test Style Guide
+**Preferred Style:** Plain pytest functions (not fixtures, not classes)
+
+The codebase has two existing styles:
+1. **unittest.TestCase** (legacy) - `test_services.py` only
+2. **Plain pytest functions** (preferred) - All other tests
+
+**For new tests, use plain pytest functions:**
+```python
+# ✅ DO: Plain functions with helper functions
+def _create_test_data():
+    """Helper to create test data"""
+    # Setup code
+    return data
+
+def test_feature():
+    """Test description"""
+    data = _create_test_data()
+    try:
+        result = function_under_test(data)
+        assert result == expected
+    finally:
+        # Cleanup if needed
+        cleanup(data)
+
+# ❌ DON'T: pytest fixtures or classes
+@pytest.fixture  # Avoid - inconsistent with existing tests
+def test_data():
+    return data
+
+class TestFeature:  # Avoid - unless using unittest.TestCase
+    def test_something(self):
+        pass
+```
+
+**When to use helper functions:**
+- Creating test files (MIDI, MusicXML)
+- Generating mock data
+- Complex setup that's reused across multiple tests
+- Name with leading underscore: `_create_helper_data()`
+
+**When to use inline setup:**
+- Simple, one-line setup
+- Test-specific data that's not reused
 
 ### Frontend Environment Detection
 The frontend detects whether it's running in Electron or a browser:

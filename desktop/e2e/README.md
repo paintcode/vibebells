@@ -31,10 +31,12 @@ These tests verify the complete user workflow:
 1. **App Launch**: Electron app starts successfully
 2. **Backend Health**: Python backend spawns and responds
 3. **Frontend Loading**: React UI renders correctly
-4. **MIDI Upload**: File selection and upload works
+4. **MIDI Upload**: File selection and upload works (using Electron native dialogs)
 5. **Player Configuration**: Adding and configuring players
 6. **Arrangement Generation**: Creating bell arrangements
 7. **CSV Export**: Exporting arrangements to CSV
+
+**Note**: Both API and UI tests launch the desktop executable, which automatically starts the backend on port 5000. No separate backend process is needed.
 
 ## Test Structure
 
@@ -55,9 +57,14 @@ e2e/
 
 ### Prerequisites
 
+**No manual setup required!** Both test suites launch the desktop executable automatically, which includes the backend.
+
 ```bash
 # Install dependencies (already done during setup)
 npm install
+
+# Optional: Build the desktop app if testing production build
+npm run build:win
 ```
 
 ### Run All Tests

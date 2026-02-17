@@ -1,17 +1,41 @@
 /**
  * Backend API Integration Tests
  * 
- * Tests the backend API endpoints independently
+ * Tests the backend API endpoints by launching the desktop app
+ * (which starts the backend automatically)
  */
 
 const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
+const {
+  launchElectronApp,
+  waitForBackend,
+  cleanupElectronApp
+} = require('./helpers/electron-helpers');
 
 const BACKEND_URL = 'http://localhost:5000';
 const MIDI_FILE_PATH = path.join(__dirname, 'fixtures', 'test-song.mid');
 
+let electronApp;
+
 test.describe('Backend API', () => {
+  
+  test.beforeAll(async () => {
+    console.log('Launching Electron app for API tests...');
+    const result = await launchElectronApp();
+    electronApp = result.app;
+    
+    console.log('Waiting for backend to be ready...');
+    await waitForBackend();
+    
+    console.log('✅ Backend ready for API testing');
+  });
+  
+  test.afterAll(async () => {
+    console.log('Cleaning up Electron app...');
+    await cleanupElectronApp(electronApp);
+  });
   
   test('health check returns healthy status', async ({ request }) => {
     const response = await request.get(`${BACKEND_URL}/api/health`);

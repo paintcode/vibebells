@@ -19,7 +19,10 @@ def test_complete_system():
     
     # Parse real music
     parser = MusicParser()
-    sample_file = os.path.join(os.path.dirname(__file__), '../sample-music/O for a Thousand Tongues to Sing.mid')
+    # Path from backend/tests/integration/ to project root sample-music/
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    project_root = os.path.dirname(backend_dir)
+    sample_file = os.path.join(project_root, 'sample-music', 'O for a Thousand Tongues to Sing.mid')
     
     try:
         print("Parsing MIDI file...")
@@ -42,10 +45,19 @@ def test_complete_system():
         
         with app.app_context():
             gen = ArrangementGenerator()
-            arrangements = gen.generate(music_data, players)
+            result = gen.generate(music_data, players)
+        
+        arrangements = result['arrangements']
         
         print(f"\nResults:")
         print(f"  Arrangements: {len(arrangements)}")
+        
+        # Verify we got arrangements
+        assert len(arrangements) > 0, "Should generate at least one arrangement"
+        assert 'quality_score' in arrangements[0], "Arrangement should have quality_score"
+        assert 'strategy' in arrangements[0], "Arrangement should have strategy"
+        assert 'assignments' in arrangements[0], "Arrangement should have assignments"
+        
         print(f"  Best score: {arrangements[0]['quality_score']:.1f}/100")
         print(f"  Strategy: {arrangements[0]['strategy']}")
         
@@ -56,15 +68,17 @@ def test_complete_system():
             print(f"  {player_name}: {len(bells)} bells")
         
         print("\nSUCCESS: Complete system working with frequency optimization!")
-        return True
         
     except Exception as e:
         print(f"ERROR: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise
 
 
 if __name__ == '__main__':
-    success = test_complete_system()
-    sys.exit(0 if success else 1)
+    try:
+        test_complete_system()
+        sys.exit(0)
+    except Exception:
+        sys.exit(1)
