@@ -14,8 +14,11 @@ backend/
 │   ├── README.md                # This file
 │   ├── unit/                    # Unit tests (isolated, fast)
 │   │   ├── __init__.py
-│   │   ├── test_services.py     # SwapCounter, ExportFormatter (24 tests)
-│   │   ├── test_swap_cost.py    # SwapCostCalculator (7 tests)
+│   │   ├── test_file_handler.py            # FileHandler (15 tests)
+│   │   ├── test_midi_parser.py             # MIDIParser (12 tests)
+│   │   ├── test_musicxml_parser.py         # MusicXMLParser (14 tests)
+│   │   ├── test_services.py                # SwapCounter, ExportFormatter (24 tests)
+│   │   ├── test_swap_cost.py               # SwapCostCalculator (7 tests)
 │   │   └── test_experience_constraints.py  # Experience constraints (5 tests)
 │   └── integration/             # Integration tests (end-to-end workflows)
 │       ├── __init__.py
