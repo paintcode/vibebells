@@ -3,10 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './ArrangementDisplay.css';
 import { isElectron, onMenuExportCSV } from '../lib/electron';
+import SimulationPlayer from './SimulationPlayer';
 
 export default function ArrangementDisplay({ arrangements, expansionInfo, uploadedFilename, players }) {
   const [selectedArrangement, setSelectedArrangement] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [showSimulation, setShowSimulation] = useState(false);
 
   if (!arrangements || arrangements.length === 0) {
     return <p>No arrangements generated</p>;
@@ -126,14 +128,24 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
             </div>
           </div>
           {current && current.assignments && (
-            <button 
-              className="export-btn" 
-              onClick={handleExportCSV}
-              disabled={exporting}
-              title="Export arrangement as CSV spreadsheet"
-            >
-              {exporting ? 'Exporting...' : 'Export CSV'}
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="export-btn" 
+                onClick={handleExportCSV}
+                disabled={exporting}
+                title="Export arrangement as CSV spreadsheet"
+              >
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </button>
+              <button
+                className="export-btn"
+                onClick={() => setShowSimulation(s => !s)}
+                disabled={!current.simulation}
+                title={current.simulation ? 'Open practice simulation' : 'Simulation data not available'}
+              >
+                {showSimulation ? '⏹ Close Simulation' : '▶ Simulate'}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -241,6 +253,13 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
           );
         })}
       </div>
+
+      {showSimulation && current.simulation && (
+        <SimulationPlayer
+          simulationData={current.simulation}
+          onClose={() => setShowSimulation(false)}
+        />
+      )}
     </div>
   );
 }

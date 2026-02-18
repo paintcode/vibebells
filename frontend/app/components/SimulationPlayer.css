@@ -1,0 +1,144 @@
+.sim-player {
+  width: 100%;
+  background: #12121f;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+  margin-top: 1.5rem;
+}
+
+.sim-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #6b2d2d;
+}
+
+.sim-title {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sim-close-btn {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.sim-close-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.sim-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  background: #1e1e30;
+  border-bottom: 1px solid #333;
+}
+
+.sim-btn {
+  padding: 0.4rem 0.9rem;
+  border-radius: 5px;
+  border: 1px solid #555;
+  background: #2d2d45;
+  color: #ddd;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sim-btn:hover {
+  background: #3d3d60;
+  border-color: #777;
+}
+.sim-btn-primary {
+  background: #6b2d2d;
+  border-color: #8a3d3d;
+  color: #fff;
+  font-weight: 600;
+}
+.sim-btn-primary:hover {
+  background: #7e3535;
+}
+
+.sim-label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #bbb;
+  font-size: 0.83rem;
+}
+
+.sim-select {
+  background: #2d2d45;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.83rem;
+  cursor: pointer;
+}
+
+.sim-threshold {
+  width: 72px;
+  background: #2d2d45;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.83rem;
+  text-align: right;
+}
+
+.sim-canvas-wrapper {
+  overflow-x: auto;
+  background: #1a1a2e;
+  padding: 0.5rem 0;
+}
+
+.sim-canvas {
+  display: block;
+  cursor: default;
+}
+
+.sim-legend {
+  display: flex;
+  gap: 1.2rem;
+  padding: 0.5rem 1rem;
+  background: #1e1e30;
+  border-top: 1px solid #333;
+  flex-wrap: wrap;
+}
+
+.sim-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: #aaa;
+}
+
+.sim-legend-color {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.sim-legend-bar {
+  display: inline-block;
+  width: 36px;
+  height: 10px;
+  border-radius: 3px;
+}
