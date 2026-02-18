@@ -164,22 +164,37 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
         ))}
       </div>
 
-      {current.validation && (
-        <div className={`validation-status ${current.validation.valid ? 'valid' : 'invalid'}`}>
-          {current.validation.valid ? (
-            <span>✓ Valid arrangement</span>
-          ) : (
-            <span>⚠ Issues found: {current.validation.issues.join(', ')}</span>
-          )}
-          {current.validation.warnings.length > 0 && (
-            <div className="warnings">
-              {current.validation.warnings.map((warning, idx) => (
-                <p key={idx}>{warning}</p>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {current.validation && (() => {
+        // Check simulation data for impossible swaps (gap_ms < 100ms = physically unperformable)
+        const invalidSimPlayers = current.simulation?.players?.filter(p =>
+          p.events.some(e => e.type === 'put_down' && e.gap_ms < 100)
+        ).map(p => p.name) ?? [];
+        const simInvalid = invalidSimPlayers.length > 0;
+        const isValid = current.validation.valid && !simInvalid;
+        return (
+          <div className={`validation-status ${isValid ? 'valid' : 'invalid'}`}>
+            {isValid ? (
+              <span>✓ Valid arrangement</span>
+            ) : (
+              <>
+                {!current.validation.valid && (
+                  <span>⚠ Issues found: {current.validation.issues.join(', ')}</span>
+                )}
+                {simInvalid && (
+                  <span>⛔ Impossible swaps: {invalidSimPlayers.join(', ')} cannot perform required bell changes in time</span>
+                )}
+              </>
+            )}
+            {current.validation.warnings.length > 0 && (
+              <div className="warnings">
+                {current.validation.warnings.map((warning, idx) => (
+                  <p key={idx}>{warning}</p>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {current.sustainability && current.sustainability.recommendations.length > 0 && (
         <div className="sustainability-recommendations">
@@ -190,6 +205,13 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
             ))}
           </ul>
         </div>
+      )}
+
+      {showSimulation && current.simulation && (
+        <SimulationPlayer
+          simulationData={current.simulation}
+          onClose={() => setShowSimulation(false)}
+        />
       )}
 
       <div className="arrangement-content">
@@ -253,13 +275,6 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
           );
         })}
       </div>
-
-      {showSimulation && current.simulation && (
-        <SimulationPlayer
-          simulationData={current.simulation}
-          onClose={() => setShowSimulation(false)}
-        />
-      )}
     </div>
   );
 }
