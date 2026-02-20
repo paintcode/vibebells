@@ -25,10 +25,13 @@ const TABLE_Y = 270;
 const FATIGUE_BAR_Y = 340;
 const FATIGUE_BAR_H = 18;
 
-function lerp(a, b, t) {
-  return a + (b - a) * Math.clamp(t, 0, 1);
+function clamp(v, lo, hi) {
+  return Math.max(lo, Math.min(hi, v));
 }
-Math.clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+function lerp(a, b, t) {
+  return a + (b - a) * clamp(t, 0, 1);
+}
 
 /** Pre-compute stable table x/y positions for all bells, sorted by pitch ascending. */
 function computeTablePositions(bells, colX) {
