@@ -13,8 +13,6 @@ const ARM_RING_ANGLE = -0.8;
 const ARM_TABLE_ANGLE = 1.2;
 
 const SWAP_MAX_DURATION_MS = 2000;
-// Minimum gap (ms) below which a swap is too fast to animate — physically impossible to perform.
-const SWAP_ANIM_MIN_MS = 100;
 
 // Stick figure geometry
 const HEAD_R = 12;
@@ -203,7 +201,7 @@ function drawFatigueBar(ctx, colX, fatigue, maxFatigue) {
 }
 
 /** Draw one player column. */
-function drawPlayer(ctx, player, colX, timeMs, maxFatigue, thresholdMs) {
+function drawPlayer(ctx, player, colX, timeMs, maxFatigue, thresholdMs, impossibleSwapGapMs) {
   const cx = colX + PLAYER_WIDTH / 2;
   const events = player.events;
   const headY = FIGURE_TOP + HEAD_R;
@@ -214,7 +212,7 @@ function drawPlayer(ctx, player, colX, timeMs, maxFatigue, thresholdMs) {
   const tablePosMap = computeTablePositions(player.bells, colX);
 
   // Detect any swap that is physically impossible to perform (too fast to animate).
-  const hasImpossibleSwap = events.some(e => e.type === 'put_down' && e.gap_ms < SWAP_ANIM_MIN_MS);
+  const hasImpossibleSwap = events.some(e => e.type === 'put_down' && e.gap_ms < impossibleSwapGapMs);
 
   // Get animation state for each hand
   const leftState  = getHandAnimState(events, 'left',  timeMs, thresholdMs, player.bells, tablePosMap, cx, shoulderY);
@@ -377,6 +375,7 @@ export default function SimulationPlayer({ simulationData, onClose }) {
 
   const players = simulationData?.players ?? [];
   const durationMs = simulationData?.duration_ms ?? 0;
+  const impossibleSwapGapMs = simulationData?.impossible_swap_gap_ms ?? 100;
   const maxFatigue = Math.max(...players.map(p => p.fatigue_score), 1);
 
   // Draw a single frame
@@ -402,7 +401,7 @@ export default function SimulationPlayer({ simulationData, onClose }) {
         ctx.lineWidth = 1;
         ctx.stroke();
       }
-      drawPlayer(ctx, player, colX, simTimeMs, maxFatigue, threshold);
+      drawPlayer(ctx, player, colX, simTimeMs, maxFatigue, threshold, impossibleSwapGapMs);
     });
 
     // Time indicator
@@ -410,7 +409,7 @@ export default function SimulationPlayer({ simulationData, onClose }) {
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`${(simTimeMs / 1000).toFixed(2)}s / ${(durationMs / 1000).toFixed(2)}s`, canvas.width - 6, CANVAS_HEIGHT - 6);
-  }, [players, maxFatigue, threshold, durationMs]);
+  }, [players, maxFatigue, threshold, durationMs, impossibleSwapGapMs]);
 
   // Animation loop
   const tick = useCallback(() => {

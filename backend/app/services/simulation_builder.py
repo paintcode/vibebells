@@ -7,6 +7,8 @@ stick-figure players ringing handbells in sync with the uploaded music.
 
 import logging
 
+from config import Config
+
 logger = logging.getLogger(__name__)
 
 # Malmark handbell data: MIDI pitch -> (diameter_in, weight_oz)
@@ -307,5 +309,6 @@ class SimulationBuilder:
             'format': fmt,
             'duration_ms': int(round(duration_ms)),
             'tight_swap_threshold_ms': tight_swap_threshold_ms,
+            'impossible_swap_gap_ms': Config.IMPOSSIBLE_SWAP_GAP_MS,
             'players': players_out,
         }
