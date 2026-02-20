@@ -4,13 +4,7 @@ Unit tests for SimulationBuilder.
 Style: plain pytest functions (no classes, no fixtures).
 """
 
-import sys
-import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-
-from app.services.simulation_builder import SimulationBuilder, _MALMARK_DATA
-
-
+from app.services.simulation_builder import SimulationBuilder
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
