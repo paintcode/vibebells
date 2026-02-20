@@ -160,7 +160,10 @@ class SimulationBuilder:
                     name_map[p] = bell_name
                     bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    pass
+                    logger.warning(
+                        "Could not convert bell '%s' to pitch for player '%s' (left hand); skipping.",
+                        bell_name, player_name,
+                    )
 
             for bell_name in right_hand_bells:
                 try:
@@ -169,7 +172,10 @@ class SimulationBuilder:
                     name_map[p] = bell_name
                     bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    pass
+                    logger.warning(
+                        "Could not convert bell '%s' to pitch for player '%s' (right hand); skipping.",
+                        bell_name, player_name,
+                    )
 
             # Handle bells listed only in 'bells' (not in hand lists)
             for bell_name in all_bell_names:
@@ -180,7 +186,10 @@ class SimulationBuilder:
                         name_map[p] = bell_name
                         bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    pass
+                    logger.warning(
+                        "Could not convert bell '%s' to pitch for player '%s' (bells list); skipping.",
+                        bell_name, player_name,
+                    )
 
             # Build bells metadata list
             bells_meta = []
@@ -197,9 +206,10 @@ class SimulationBuilder:
                         'canvas_px': cpx,
                     })
                 except (ValueError, KeyError):
-                    pass
-
-            # Build weight lookup for fatigue calculation
+                    logger.warning(
+                        "Could not build metadata for bell '%s' for player '%s'; skipping.",
+                        bell_name, player_name,
+                    )
             weight_by_pitch = {b['pitch']: b['weight_oz'] for b in bells_meta}
 
             # Filter and sort notes for this player
