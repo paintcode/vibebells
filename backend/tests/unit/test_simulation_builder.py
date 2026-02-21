@@ -4,7 +4,9 @@ Unit tests for SimulationBuilder.
 Style: plain pytest functions (no classes, no fixtures).
 """
 
+import logging
 from app.services.simulation_builder import SimulationBuilder
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -212,3 +214,29 @@ def test_events_sorted_by_time():
     events = result['players'][0]['events']
     times = [e['time_ms'] for e in events]
     assert times == sorted(times)
+
+
+def test_invalid_bell_name_logs_warning(caplog):
+    """An unrecognisable bell name logs a warning and is silently skipped."""
+    notes = [
+        {'pitch': 60, 'velocity': 80, 'time': 0, 'duration': 480},
+    ]
+    music_data = _make_music_data(notes=notes)
+    arrangement = _make_arrangement({'Player 1': (['C4', 'NOT_A_BELL'], ['C4'], ['NOT_A_BELL'])})
+
+    with caplog.at_level(logging.WARNING, logger='app.services.simulation_builder'):
+        result = SimulationBuilder.build(music_data, arrangement)
+
+    # The valid bell is still present; the invalid one is absent
+    player = result['players'][0]
+    bell_names = [b['name'] for b in player['bells']]
+    assert 'C4' in bell_names
+    assert 'NOT_A_BELL' not in bell_names
+
+    # A warning mentioning both the player name and the bad bell was emitted for each
+    # affected code path: right hand, bells list, and metadata construction (3 total).
+    assert len(caplog.records) == 3
+    assert any('right hand' in r.message for r in caplog.records)
+    assert any('bells list' in r.message for r in caplog.records)
+    assert any('metadata' in r.message for r in caplog.records)
+    assert all('NOT_A_BELL' in r.message and 'Player 1' in r.message for r in caplog.records)
