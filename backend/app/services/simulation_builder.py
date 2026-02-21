@@ -160,10 +160,7 @@ class SimulationBuilder:
                     name_map[p] = bell_name
                     bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    logger.warning(
-                        "Could not convert bell '%s' to pitch for player '%s' (left hand); skipping.",
-                        bell_name, player_name,
-                    )
+                    logger.warning(f"Could not convert bell '{bell_name}' to pitch for player '{player_name}' (left hand); skipping.")
 
             for bell_name in right_hand_bells:
                 try:
@@ -172,10 +169,7 @@ class SimulationBuilder:
                     name_map[p] = bell_name
                     bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    logger.warning(
-                        "Could not convert bell '%s' to pitch for player '%s' (right hand); skipping.",
-                        bell_name, player_name,
-                    )
+                    logger.warning(f"Could not convert bell '{bell_name}' to pitch for player '{player_name}' (right hand); skipping.")
 
             # Handle bells listed only in 'bells' (not in hand lists)
             for bell_name in all_bell_names:
@@ -186,10 +180,7 @@ class SimulationBuilder:
                         name_map[p] = bell_name
                         bell_pitches.add(p)
                 except (ValueError, KeyError):
-                    logger.warning(
-                        "Could not convert bell '%s' to pitch for player '%s' (bells list); skipping.",
-                        bell_name, player_name,
-                    )
+                    logger.warning(f"Could not convert bell '{bell_name}' to pitch for player '{player_name}' (bells list); skipping.")
 
             # Build bells metadata list
             bells_meta = []
@@ -206,10 +197,7 @@ class SimulationBuilder:
                         'canvas_px': cpx,
                     })
                 except (ValueError, KeyError):
-                    logger.warning(
-                        "Could not build metadata for bell '%s' for player '%s'; skipping.",
-                        bell_name, player_name,
-                    )
+                    logger.warning(f"Could not build metadata for bell '{bell_name}' for player '{player_name}'; skipping.")
             weight_by_pitch = {b['pitch']: b['weight_oz'] for b in bells_meta}
 
             # Filter and sort notes for this player

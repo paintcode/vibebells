@@ -233,5 +233,10 @@ def test_invalid_bell_name_logs_warning(caplog):
     assert 'C4' in bell_names
     assert 'NOT_A_BELL' not in bell_names
 
-    # A warning mentioning both the player name and the bad bell was emitted
-    assert any('NOT_A_BELL' in r.message and 'Player 1' in r.message for r in caplog.records)
+    # A warning mentioning both the player name and the bad bell was emitted for each
+    # affected code path: right hand, bells list, and metadata construction (3 total).
+    assert len(caplog.records) == 3
+    assert any('right hand' in r.message for r in caplog.records)
+    assert any('bells list' in r.message for r in caplog.records)
+    assert any('metadata' in r.message for r in caplog.records)
+    assert all('NOT_A_BELL' in r.message and 'Player 1' in r.message for r in caplog.records)
