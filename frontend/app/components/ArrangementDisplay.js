@@ -207,6 +207,13 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
         </div>
       )}
 
+      {showSimulation && !current.simulation && (
+        <div className="simulation-unavailable">
+          <span className="simulation-unavailable-icon">ℹ</span>
+          <span>Simulation is not available for this arrangement.</span>
+          <button type="button" className="simulation-unavailable-close" onClick={() => setShowSimulation(false)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
       {showSimulation && current.simulation && (
         <SimulationPlayer
           simulationData={current.simulation}
