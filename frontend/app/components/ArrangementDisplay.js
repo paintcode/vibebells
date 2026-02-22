@@ -165,9 +165,10 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
       </div>
 
       {current.validation && (() => {
-        // Check simulation data for impossible swaps (gap_ms < 100ms = physically unperformable)
+        // Check simulation data for impossible swaps (gap_ms < impossible_swap_gap_ms = physically unperformable)
+        const impossibleSwapGapMs = current.simulation?.impossible_swap_gap_ms ?? 100;
         const invalidSimPlayers = current.simulation?.players?.filter(p =>
-          p.events.some(e => e.type === 'put_down' && e.gap_ms < 100)
+          p.events.some(e => e.type === 'put_down' && e.gap_ms < impossibleSwapGapMs)
         ).map(p => p.name) ?? [];
         const simInvalid = invalidSimPlayers.length > 0;
         const isValid = current.validation.valid && !simInvalid;

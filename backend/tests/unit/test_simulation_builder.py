@@ -113,6 +113,23 @@ def test_build_simple_two_player():
     assert result['format'] == 'midi'
 
 
+def test_build_includes_impossible_swap_gap_ms():
+    """Build result includes impossible_swap_gap_ms from Config."""
+    from config import Config
+    notes = [
+        {'pitch': 60, 'velocity': 80, 'time': 0,  'duration': 480},
+        {'pitch': 64, 'velocity': 80, 'time': 480, 'duration': 480},
+    ]
+    music_data = _make_music_data(notes=notes)
+    arrangement = _make_arrangement({
+        'Player 1': (['C4'], ['C4'], []),
+        'Player 2': (['E4'], ['E4'], []),
+    })
+    result = SimulationBuilder.build(music_data, arrangement)
+    assert 'impossible_swap_gap_ms' in result
+    assert result['impossible_swap_gap_ms'] == Config.IMPOSSIBLE_SWAP_GAP_MS
+
+
 def test_ring_event_has_duration_ms():
     """Ring events include a duration_ms field matching the note duration."""
     notes = [

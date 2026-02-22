@@ -25,6 +25,7 @@ class Config:
     }
     
     HAND_GAP_THRESHOLD_BEATS = 1.0  # Minimum beats between same-hand notes (configurable)
+    IMPOSSIBLE_SWAP_GAP_MS = 100  # Gap (ms) below which a bell swap is physically impossible to perform
 
 class DevelopmentConfig(Config):
     """Development configuration"""
