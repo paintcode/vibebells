@@ -3,6 +3,7 @@ from app.services.music_parser import MusicParser
 from app.services.conflict_resolver import ConflictResolver
 from app.services.arrangement_validator import ArrangementValidator
 from app.services.swap_counter import SwapCounter
+from app.services.simulation_builder import SimulationBuilder
 from flask import current_app
 import logging
 
@@ -109,12 +110,19 @@ class ArrangementGenerator:
                 
                 # Calculate actual swaps for each player based on note sequence
                 swap_counts = SwapCounter.calculate_swaps_for_arrangement(assignment, music_data)
-                
+
+                try:
+                    simulation = SimulationBuilder.build(music_data, assignment)
+                except Exception as sim_err:
+                    logger.warning(f"Failed to build simulation for {strategy}: {sim_err}")
+                    simulation = None
+
                 arrangements.append({
                     'strategy': strategy,
                     'description': description,
                     'assignments': assignment,
                     'swaps': swap_counts,  # New: actual swap counts per player
+                    'simulation': simulation,
                     'validation': validation,
                     'sustainability': sustainability,
                     'quality_score': quality_score,

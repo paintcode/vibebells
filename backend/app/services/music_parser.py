@@ -45,7 +45,8 @@ class MusicParser:
                 'harmony_pitches': melody_harmony['harmony_pitches'],
                 'frequencies': frequencies,
                 'format': 'midi',
-                'tempo': data.get('tempo', 120)
+                'tempo': data.get('tempo', 120),
+                'ticks_per_beat': data.get('ticks_per_beat', 480)
             }
         except Exception as e:
             raise Exception(f"Error parsing MIDI file: {str(e)}")
