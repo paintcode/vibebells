@@ -13,6 +13,11 @@ Vibebells is a complete, production-ready handbell arrangement generator availab
 - Bell choir simulator
 - Improved validation of arrangements
 
+### v1.0.2 (February 22, 2026)
+**Security patch**
+- Flask, tar security updates
+- mido upgrade to relieve dependency conflict
+
 ### v1.0.1 (February 16, 2026)
 **Security patch**
 - Fixed Flask debug mode security issue (was always enabled)
