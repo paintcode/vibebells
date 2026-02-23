@@ -411,8 +411,11 @@ export default function SimulationPlayer({ simulationData, onClose }) {
   // Precompute stable per-player data (table positions, sorted hand events, swap pairs).
   // Recomputed only when simulationData changes, not on every frame.
   const playerCache = useMemo(
-    () => buildPlayerCache(players, impossibleSwapGapMs),
-    [players, impossibleSwapGapMs]
+    () => buildPlayerCache(
+      simulationData?.players ?? [],
+      simulationData?.impossible_swap_gap_ms ?? 100
+    ),
+    [simulationData]
   );
 
   // Draw a single frame
