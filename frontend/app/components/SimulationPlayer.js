@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import './SimulationPlayer.css';
 
 const PLAYER_WIDTH = 180;
@@ -64,21 +64,12 @@ function idleHandPos(cx, shoulderY, hand) {
 
 /**
  * Determine the full animation state for one hand at timeMs.
+ * handEvents: pre-sorted array of events for this hand.
+ * swapPairs: pre-computed array of { putDown, pickUp } pairs for this hand.
  * Returns { phase, flyingBell, flyingPos, heldBell, armTip, isRinging, isTight }
  * phase: 'idle' | 'ringing' | 'swap_phase1' | 'swap_phase2' | 'swap_done'
  */
-function getHandAnimState(events, hand, timeMs, thresholdMs, bells, tablePosMap, cx, shoulderY) {
-  const handEvents = events
-    .filter(e => e.hand === hand)
-    .sort((a, b) => a.time_ms - b.time_ms);
-
-  // Collect swap pairs { putDown, pickUp }
-  const swapPairs = [];
-  for (let i = 0; i < handEvents.length; i++) {
-    if (handEvents[i].type !== 'put_down') continue;
-    const pickUp = handEvents.slice(i + 1).find(e => e.type === 'pick_up');
-    if (pickUp) swapPairs.push({ putDown: handEvents[i], pickUp });
-  }
+function getHandAnimState(handEvents, swapPairs, hand, timeMs, thresholdMs, bells, tablePosMap, cx, shoulderY) {
 
   // Check if timeMs falls inside a swap window
   for (const { putDown, pickUp } of swapPairs) {
@@ -203,23 +194,59 @@ function drawFatigueBar(ctx, colX, fatigue, maxFatigue) {
   ctx.fillText('Fatigue', barX + barW / 2, FATIGUE_BAR_Y - 3);
 }
 
+/** Build per-hand sorted events and swap pairs for one hand. */
+function buildHandCache(events, hand) {
+  const handEvents = events
+    .filter(e => e.hand === hand)
+    .sort((a, b) => a.time_ms - b.time_ms);
+  const swapPairs = [];
+  for (let i = 0; i < handEvents.length; i++) {
+    if (handEvents[i].type !== 'put_down') continue;
+    const pickUp = handEvents.slice(i + 1).find(e => e.type === 'pick_up');
+    if (pickUp) swapPairs.push({ putDown: handEvents[i], pickUp });
+  }
+  return { handEvents, swapPairs };
+}
+
+/**
+ * Precompute stable per-player data that does not change frame-to-frame.
+ * Returns an array (one entry per player) with tablePosMap, per-hand event
+ * lists, per-hand swap pairs, and hasImpossibleSwap flag.
+ */
+function buildPlayerCache(players, impossibleSwapGapMs) {
+  return players.map((player, i) => {
+    const colX = i * PLAYER_WIDTH;
+    const tablePosMap = computeTablePositions(player.bells, colX);
+    const left = buildHandCache(player.events, 'left');
+    const right = buildHandCache(player.events, 'right');
+    const hasImpossibleSwap = player.events.some(
+      e => e.type === 'put_down' && e.gap_ms < impossibleSwapGapMs
+    );
+    return {
+      tablePosMap,
+      leftHandEvents: left.handEvents,
+      leftSwapPairs: left.swapPairs,
+      rightHandEvents: right.handEvents,
+      rightSwapPairs: right.swapPairs,
+      hasImpossibleSwap,
+    };
+  });
+}
+
 /** Draw one player column. */
-function drawPlayer(ctx, player, colX, timeMs, maxFatigue, thresholdMs, impossibleSwapGapMs) {
+function drawPlayer(ctx, player, colX, timeMs, maxFatigue, thresholdMs, cache) {
   const cx = colX + PLAYER_WIDTH / 2;
   const events = player.events;
   const headY = FIGURE_TOP + HEAD_R;
   const shoulderY = headY + HEAD_R + 10;
   const hipY = shoulderY + 70;
 
-  // Pre-compute stable table positions for all bells
-  const tablePosMap = computeTablePositions(player.bells, colX);
-
-  // Detect any swap that is physically impossible to perform (too fast to animate).
-  const hasImpossibleSwap = events.some(e => e.type === 'put_down' && e.gap_ms < impossibleSwapGapMs);
+  // Use precomputed stable per-player data (does not change frame-to-frame)
+  const { tablePosMap, leftHandEvents, leftSwapPairs, rightHandEvents, rightSwapPairs, hasImpossibleSwap } = cache;
 
   // Get animation state for each hand
-  const leftState  = getHandAnimState(events, 'left',  timeMs, thresholdMs, player.bells, tablePosMap, cx, shoulderY);
-  const rightState = getHandAnimState(events, 'right', timeMs, thresholdMs, player.bells, tablePosMap, cx, shoulderY);
+  const leftState  = getHandAnimState(leftHandEvents,  leftSwapPairs,  'left',  timeMs, thresholdMs, player.bells, tablePosMap, cx, shoulderY);
+  const rightState = getHandAnimState(rightHandEvents, rightSwapPairs, 'right', timeMs, thresholdMs, player.bells, tablePosMap, cx, shoulderY);
   const isSwapping = leftState.phase.startsWith('swap') || rightState.phase.startsWith('swap');
   const isTight    = leftState.isTight || rightState.isTight;
 
@@ -381,6 +408,16 @@ export default function SimulationPlayer({ simulationData, onClose }) {
   const impossibleSwapGapMs = simulationData?.impossible_swap_gap_ms ?? 100;
   const maxFatigue = Math.max(...players.map(p => p.fatigue_score), 1);
 
+  // Precompute stable per-player data (table positions, sorted hand events, swap pairs).
+  // Recomputed only when simulationData changes, not on every frame.
+  const playerCache = useMemo(
+    () => buildPlayerCache(
+      simulationData?.players ?? [],
+      simulationData?.impossible_swap_gap_ms ?? 100
+    ),
+    [simulationData]
+  );
+
   // Draw a single frame
   const draw = useCallback((simTimeMs) => {
     const canvas = canvasRef.current;
@@ -404,7 +441,7 @@ export default function SimulationPlayer({ simulationData, onClose }) {
         ctx.lineWidth = 1;
         ctx.stroke();
       }
-      drawPlayer(ctx, player, colX, simTimeMs, maxFatigue, threshold, impossibleSwapGapMs);
+      drawPlayer(ctx, player, colX, simTimeMs, maxFatigue, threshold, playerCache[i]);
     });
 
     // Time indicator
@@ -412,7 +449,7 @@ export default function SimulationPlayer({ simulationData, onClose }) {
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(`${(simTimeMs / 1000).toFixed(2)}s / ${(durationMs / 1000).toFixed(2)}s`, canvas.width - 6, CANVAS_HEIGHT - 6);
-  }, [players, maxFatigue, threshold, durationMs, impossibleSwapGapMs]);
+  }, [players, maxFatigue, threshold, durationMs, playerCache]);
 
   // Animation loop
   const tick = useCallback(() => {
