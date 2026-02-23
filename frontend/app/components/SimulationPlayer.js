@@ -451,20 +451,34 @@ export default function SimulationPlayer({ simulationData, onClose }) {
     ctx.fillText(`${(simTimeMs / 1000).toFixed(2)}s / ${(durationMs / 1000).toFixed(2)}s`, canvas.width - 6, CANVAS_HEIGHT - 6);
   }, [players, maxFatigue, threshold, durationMs, playerCache]);
 
+  const simTimeRef = useRef(0);
+  const lastUiUpdateRef = useRef(0);
+
   // Animation loop
   const tick = useCallback(() => {
     const now = performance.now();
     const elapsed = (now - startWallTimeRef.current) * speed;
     const simTime = startSimTimeRef.current + elapsed;
 
+    // Always keep ref in sync with latest sim time
+    simTimeRef.current = simTime;
+
     if (simTime >= durationMs) {
+      // Ensure final UI state is exact at the end
+      simTimeRef.current = durationMs;
+      lastUiUpdateRef.current = now;
       setCurrentTimeMs(durationMs);
       draw(durationMs);
       setIsPlaying(false);
       return;
     }
 
-    setCurrentTimeMs(simTime);
+    // Throttle React state updates to avoid 60fps re-renders
+    const UI_UPDATE_INTERVAL_MS = 100; // ~10Hz
+    if (now - lastUiUpdateRef.current >= UI_UPDATE_INTERVAL_MS) {
+      lastUiUpdateRef.current = now;
+      setCurrentTimeMs(simTime);
+    }
     draw(simTime);
 
     // Schedule audio for upcoming events
