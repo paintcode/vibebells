@@ -12,7 +12,7 @@ class Config:
     REQUEST_TIMEOUT = 30  # 30 second timeout
     ALLOWED_EXTENSIONS = {'mid', 'midi', 'musicxml', 'xml'}
     MIN_PLAYERS = 1
-    MAX_PLAYERS = 20
+    MAX_PLAYERS = 100
     
     # Multi-bell configuration
     MAX_BELLS_PER_PLAYER = 8  # Overall practical limit
@@ -24,8 +24,15 @@ class Config:
         'beginner': 2          # Beginners exactly 2 bells (1 per hand)
     }
     
-    HAND_GAP_THRESHOLD_BEATS = 1.0  # Minimum beats between same-hand notes (configurable)
-    IMPOSSIBLE_SWAP_GAP_MS = 100  # Gap (ms) below which a bell swap is physically impossible to perform
+    IMPOSSIBLE_SWAP_GAP_MS = 500  # Gap (ms) below which a bell swap is physically impossible to perform
+
+    # Minimum gap (ms) required between consecutive notes on the same hand before an extra bell
+    # may be assigned.  Reflects real-world swap speed limits per experience level.
+    MIN_SWAP_GAP_MS = {
+        'experienced': 500,
+        'intermediate': 1000,
+        'beginner': 2000,
+    }
 
 class DevelopmentConfig(Config):
     """Development configuration"""

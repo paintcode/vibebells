@@ -196,8 +196,49 @@ class ArrangementValidator:
         # Criterion 5: Hand swap efficiency (20 points)
         hand_swap_score = ArrangementValidator._calculate_hand_swap_score(arrangement, music_data)
         score += hand_swap_score
+
+        # Penalty: dropped notes (expected in music_data but not assigned).
+        # Any dropped notes should significantly reduce arrangement quality.
+        dropped_penalty = ArrangementValidator._calculate_dropped_note_penalty(arrangement, music_data)
+        score -= dropped_penalty
         
         return min(100, max(0, score))
+
+    @staticmethod
+    def _calculate_dropped_note_penalty(arrangement, music_data):
+        """Calculate dropped-note penalty (0-60 points)."""
+        if not music_data:
+            return 0
+
+        expected = music_data.get('unique_notes')
+        if not expected:
+            return 0
+
+        from app.services.music_parser import MusicParser
+
+        expected_names = set()
+        for note in expected:
+            if isinstance(note, int):
+                expected_names.add(MusicParser.pitch_to_note_name(note))
+            else:
+                expected_names.add(str(note))
+
+        if not expected_names:
+            return 0
+
+        assigned = {
+            bell
+            for player_data in arrangement.values()
+            for bell in player_data.get('bells', [])
+        }
+
+        dropped_count = len(expected_names - assigned)
+        if dropped_count == 0:
+            return 0
+
+        drop_ratio = dropped_count / len(expected_names)
+        # Strong penalty: minimum 20 if any drops, up to 60 at 100% dropped.
+        return 20 + (40 * drop_ratio)
     
     @staticmethod
     def _calculate_hand_swap_score(arrangement, music_data):
@@ -231,10 +272,16 @@ class ArrangementValidator:
                 swaps = 0
                 current_hand = None
                 
-                # Build hand map
+                # Build hand map from actual left_hand/right_hand assignments
                 hand_map = {}
+                for bell in player_data.get('left_hand', []):
+                    hand_map[bell] = 'left'
+                for bell in player_data.get('right_hand', []):
+                    hand_map[bell] = 'right'
+                # Fall back to index parity for any bells not covered
                 for idx, bell in enumerate(bells):
-                    hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
+                    if bell not in hand_map:
+                        hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
                 
                 # Walk through timeline
                 for note in sorted(player_notes, key=lambda n: n.get('time', 0)):

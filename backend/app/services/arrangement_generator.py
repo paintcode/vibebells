@@ -76,7 +76,14 @@ class ArrangementGenerator:
                         'intermediate': 3,
                         'beginner': 2
                     }),
-                    'HAND_GAP_THRESHOLD_BEATS': current_app.config.get('HAND_GAP_THRESHOLD_BEATS', 1.0)
+                    'MIN_SWAP_GAP_MS': current_app.config.get('MIN_SWAP_GAP_MS', {
+                        'experienced': 500,
+                        'intermediate': 1000,
+                        'beginner': 2000,
+                    }),
+                    'TEMPO_BPM': music_data.get('tempo', 120),
+                    'TICKS_PER_BEAT': music_data.get('ticks_per_beat', 480),
+                    'MUSIC_FORMAT': music_data.get('format', 'midi'),
                 }
                 
                 # Build frequency map from note data
