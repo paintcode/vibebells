@@ -116,7 +116,6 @@ class BellAssignmentAlgorithm:
                     while vname in assignments:
                         vp_idx += 1
                         vname = f'Virtual Player {vp_idx}'
-                    vp_idx += 1
                     vp = {'name': vname, 'experience': 'intermediate', 'virtual': True}
                     sorted_players.append(vp)
                     player_bell_counts[vname] = 0
