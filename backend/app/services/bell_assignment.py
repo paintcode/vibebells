@@ -113,6 +113,9 @@ class BellAssignmentAlgorithm:
                 )
                 if vp is None:
                     vname = f'Virtual Player {vp_idx}'
+                    while vname in assignments:
+                        vp_idx += 1
+                        vname = f'Virtual Player {vp_idx}'
                     vp_idx += 1
                     vp = {'name': vname, 'experience': 'intermediate', 'virtual': True}
                     sorted_players.append(vp)
@@ -161,19 +164,28 @@ class BellAssignmentAlgorithm:
         def to_ms(t):
             return t / tpb * (60000.0 / bpm) if fmt == 'midi' else t * (60000.0 / bpm)
 
-        hand_events, new_events = [], []
-        for n in note_timings:
-            p = n.get('pitch')
-            if p is None:
-                continue
-            t = n.get('time', n.get('offset', 0))
-            d = n.get('duration', 0)
-            start_ms = to_ms(t)
-            end_ms = start_ms + to_ms(d)
-            if p in existing_pitches:
-                hand_events.append((start_ms, end_ms, p))
-            elif p == new_pitch:
-                new_events.append((start_ms, end_ms, p))
+        # Build or reuse a cached per-pitch event map to avoid O(N^2) rescanning.
+        pitch_events = timing_config.get('_pitch_events_ms')
+        if pitch_events is None:
+            pitch_events = {}
+            for n in note_timings:
+                p = n.get('pitch')
+                if p is None:
+                    continue
+                t_raw = n.get('time', n.get('offset', 0))
+                d_raw = n.get('duration', 0)
+                start_ms = to_ms(t_raw)
+                end_ms = start_ms + to_ms(d_raw)
+                pitch_events.setdefault(p, []).append((start_ms, end_ms, p))
+            timing_config['_pitch_events_ms'] = pitch_events
+
+        if not pitch_events:
+            return True
+
+        hand_events = []
+        for p in existing_pitches:
+            hand_events.extend(pitch_events.get(p, ()))
+        new_events = list(pitch_events.get(new_pitch, ()))
 
         if not new_events:
             return True  # New bell never played; safe to assign
@@ -355,6 +367,8 @@ class BellAssignmentAlgorithm:
                             cap_start = (cap_start + i + 1) % len(capable_players)
                             note_assigned = True
                             break
+                if not note_assigned:
+                    logger.debug(f"Balanced strategy: note {note!r} could not be assigned to any capable player (swap gap or capacity); will use virtual player fallback")
                 # Always advance to the next note; unassigned notes go to virtual fallback
                 note_idx += 1
         
