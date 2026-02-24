@@ -272,10 +272,16 @@ class ArrangementValidator:
                 swaps = 0
                 current_hand = None
                 
-                # Build hand map
+                # Build hand map from actual left_hand/right_hand assignments
                 hand_map = {}
+                for bell in player_data.get('left_hand', []):
+                    hand_map[bell] = 'left'
+                for bell in player_data.get('right_hand', []):
+                    hand_map[bell] = 'right'
+                # Fall back to index parity for any bells not covered
                 for idx, bell in enumerate(bells):
-                    hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
+                    if bell not in hand_map:
+                        hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
                 
                 # Walk through timeline
                 for note in sorted(player_notes, key=lambda n: n.get('time', 0)):
