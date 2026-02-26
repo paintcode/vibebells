@@ -1,11 +1,11 @@
-"""Unit tests for quality scoring penalties and no-drop assignment fallback."""
+"""Unit tests for scoring rules and no-drop assignment fallback."""
 
 from app.services.arrangement_validator import ArrangementValidator
 from app.services.bell_assignment import BellAssignmentAlgorithm
 
 
-def test_quality_score_penalizes_dropped_notes():
-    """Quality score should be lower when expected notes are missing from assignment."""
+def test_quality_score_hard_fails_on_dropped_notes():
+    """Quality score should hard-fail (0) when expected notes are dropped."""
     complete = {
         "Player 1": {
             "bells": ["C4", "D4", "E4"],
@@ -21,11 +21,11 @@ def test_quality_score_penalizes_dropped_notes():
         }
     }
     music_data = {
-        "unique_notes": [60, 62, 64],  # C4, D4, E4
+        "unique_notes": [60, 62, 64],
         "notes": [
             {"pitch": 60, "time": 0, "duration": 480},
-            {"pitch": 62, "time": 480, "duration": 480},
-            {"pitch": 64, "time": 960, "duration": 480},
+            {"pitch": 62, "time": 1440, "duration": 480},
+            {"pitch": 64, "time": 2880, "duration": 480},
         ],
         "format": "midi",
         "tempo": 120,
@@ -35,7 +35,96 @@ def test_quality_score_penalizes_dropped_notes():
     complete_score = ArrangementValidator.calculate_quality_score(complete, music_data)
     dropped_score = ArrangementValidator.calculate_quality_score(dropped, music_data)
 
-    assert dropped_score < complete_score
+    assert complete_score > 0
+    assert dropped_score == 0
+
+
+def test_quality_score_penalizes_unbalanced_bell_counts():
+    """Score should be lower when players are <2 bells and spread is >=2."""
+    balanced = {
+        "P1": {"bells": ["C4", "D4"], "left_hand": ["C4"], "right_hand": ["D4"]},
+        "P2": {"bells": ["E4", "F4"], "left_hand": ["E4"], "right_hand": ["F4"]},
+    }
+    unbalanced = {
+        "P1": {"bells": ["C4", "D4", "E4", "F4"], "left_hand": ["C4", "E4"], "right_hand": ["D4", "F4"]},
+        "P2": {"bells": [], "left_hand": [], "right_hand": []},
+    }
+    music_data = {
+        "unique_notes": [60, 62, 64, 65],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 240},
+            {"pitch": 62, "time": 1200, "duration": 240},
+            {"pitch": 64, "time": 2400, "duration": 240},
+            {"pitch": 65, "time": 3600, "duration": 240},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+
+    balanced_score = ArrangementValidator.calculate_quality_score(balanced, music_data)
+    unbalanced_score = ArrangementValidator.calculate_quality_score(unbalanced, music_data)
+    assert unbalanced_score < balanced_score
+
+
+def test_quality_score_penalizes_players_with_over_five_swaps():
+    """Playability score should drop when a player exceeds 5 swaps."""
+    arrangement = {
+        "Player 1": {
+            "bells": ["C4", "D4"],
+            "left_hand": ["C4"],
+            "right_hand": ["D4"],
+        }
+    }
+    high_swaps_notes = []
+    low_swaps_notes = []
+    for i in range(12):
+        # 1200 ticks between starts, 120 duration => large safe gaps
+        high_swaps_notes.append({"pitch": 60 if i % 2 == 0 else 62, "time": i * 1200, "duration": 120})
+        low_swaps_notes.append({"pitch": 60 if i < 6 else 62, "time": i * 1200, "duration": 120})
+
+    high_swaps_data = {
+        "unique_notes": [60, 62],
+        "notes": high_swaps_notes,
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    low_swaps_data = {
+        "unique_notes": [60, 62],
+        "notes": low_swaps_notes,
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+
+    high_swaps_score = ArrangementValidator.calculate_quality_score(arrangement, high_swaps_data)
+    low_swaps_score = ArrangementValidator.calculate_quality_score(arrangement, low_swaps_data)
+    assert high_swaps_score < low_swaps_score
+
+
+def test_quality_score_hard_fails_on_impossible_swaps():
+    """Score should be 0 when same-hand swaps need less than 1s gap."""
+    arrangement = {
+        "Player 1": {
+            "bells": ["C4", "D4", "E4"],
+            "left_hand": ["C4", "E4"],
+            "right_hand": ["D4"],
+        }
+    }
+    # Left-hand C4 -> E4 gap is 500ms (impossible by 1s threshold)
+    music_data = {
+        "unique_notes": [60, 62, 64],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 480},
+            {"pitch": 62, "time": 480, "duration": 120},
+            {"pitch": 64, "time": 960, "duration": 240},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    assert ArrangementValidator.calculate_quality_score(arrangement, music_data) == 0
 
 
 def test_assign_bells_adds_virtual_player_when_gap_blocks_both_hands():
