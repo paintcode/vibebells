@@ -15,6 +15,7 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
   }
 
   const current = arrangements[selectedArrangement];
+  const scoreBreakdown = current.quality_breakdown;
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#4caf50';
@@ -107,9 +108,23 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
         </div>
       )}
 
+      <div className="arrangement-selector">
+        {arrangements.map((arr, index) => (
+          <button
+            key={index}
+            className={`arrangement-tab ${selectedArrangement === index ? 'active' : ''}`}
+            onClick={() => setSelectedArrangement(index)}
+            title={arr.description}
+          >
+            <div>Arrangement {index + 1}</div>
+            <small>{Math.round(arr.quality_score)}</small>
+          </button>
+        ))}
+      </div>
+
       <div className="arrangement-info">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+          <div style={{ flex: '0 1 60%', maxWidth: '60%', minWidth: 0 }}>
             <p>
               <strong>Strategy:</strong> {current.description || current.strategy}
             </p>
@@ -126,17 +141,39 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
               </div>
               <span className="score-value">{Math.round(current.quality_score)}/100</span>
             </div>
+            {scoreBreakdown && (
+              <div className="score-details">
+                <h4>Score details</h4>
+                <div className="score-details-grid">
+                  <div className="score-details-row">
+                    <span>Playability</span>
+                    <span>{scoreBreakdown.components?.playability?.earned ?? 0}/{scoreBreakdown.components?.playability?.max ?? 50}</span>
+                  </div>
+                  <div className="score-details-row">
+                    <span>Bell fairness</span>
+                    <span>{scoreBreakdown.components?.bell_fairness?.earned ?? 0}/{scoreBreakdown.components?.bell_fairness?.max ?? 30}</span>
+                  </div>
+                  <div className="score-details-row">
+                    <span>Fatigue fairness</span>
+                    <span>{scoreBreakdown.components?.fatigue_fairness?.earned ?? 0}/{scoreBreakdown.components?.fatigue_fairness?.max ?? 20}</span>
+                  </div>
+                </div>
+                {scoreBreakdown.hard_fail ? (
+                  <div className="score-hard-fail">
+                    <strong>Hard fail:</strong> {scoreBreakdown.hard_fail_reasons?.join(', ') || 'Failed constraints'}
+                  </div>
+                ) : (
+                  <div className="score-penalties">
+                    <span>Pressure events: {scoreBreakdown.penalties?.hand_load_pressure_events ?? 0}</span>
+                    <span>Over-swap players: {(scoreBreakdown.penalties?.players_over_five_swaps || []).join(', ') || 'None'}</span>
+                    <span>Bell spread: {scoreBreakdown.penalties?.bell_fairness_spread ?? 0}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {current && current.assignments && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button 
-                className="export-btn" 
-                onClick={handleExportCSV}
-                disabled={exporting}
-                title="Export arrangement as CSV spreadsheet"
-              >
-                {exporting ? 'Exporting...' : 'Export CSV'}
-              </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end', marginLeft: 'auto' }}>
               <button
                 className="export-btn"
                 onClick={() => setShowSimulation(s => !s)}
@@ -145,23 +182,17 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
               >
                 {showSimulation ? '⏹ Close Simulation' : '▶ Simulate'}
               </button>
+              <button 
+                className="export-btn" 
+                onClick={handleExportCSV}
+                disabled={exporting}
+                title="Export arrangement as CSV spreadsheet"
+              >
+                {exporting ? 'Exporting...' : 'Export CSV'}
+              </button>
             </div>
           )}
         </div>
-      </div>
-
-      <div className="arrangement-selector">
-        {arrangements.map((arr, index) => (
-          <button
-            key={index}
-            className={`arrangement-tab ${selectedArrangement === index ? 'active' : ''}`}
-            onClick={() => setSelectedArrangement(index)}
-            title={arr.description}
-          >
-            <div>Arrangement {index + 1}</div>
-            <small>{Math.round(arr.quality_score)}</small>
-          </button>
-        ))}
       </div>
 
       {current.validation && (() => {

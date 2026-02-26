@@ -135,21 +135,67 @@ class ArrangementValidator:
         Returns:
             Quality score 0-100
         """
+        return ArrangementValidator.calculate_quality_breakdown(arrangement, music_data)['final_score']
+
+    @staticmethod
+    def calculate_quality_breakdown(arrangement, music_data=None):
+        """Calculate detailed quality scoring breakdown for UI explanation."""
         if not arrangement:
-            return 0
+            return {
+                'hard_fail': True,
+                'hard_fail_reasons': ['Empty arrangement'],
+                'weights': {'playability': 50, 'bell_fairness': 30, 'fatigue_fairness': 20},
+                'components': {
+                    'playability': {'earned': 0, 'max': 50},
+                    'bell_fairness': {'earned': 0, 'max': 30},
+                    'fatigue_fairness': {'earned': 0, 'max': 20},
+                },
+                'penalties': {},
+                'final_score': 0,
+            }
 
         dropped_count = ArrangementValidator._count_dropped_notes(arrangement, music_data)
         playability = ArrangementValidator._calculate_playability_score(arrangement, music_data)
+        bell_fairness = ArrangementValidator._calculate_bell_fairness_details(arrangement)
+        fatigue_fairness = ArrangementValidator._calculate_fatigue_fairness_details(arrangement, music_data)
 
-        # Hard fail: dropped notes or impossible swaps
-        if dropped_count > 0 or playability['impossible_swaps'] > 0:
-            return 0
+        hard_fail_reasons = []
+        if dropped_count > 0:
+            hard_fail_reasons.append(f"Dropped notes: {dropped_count}")
+        if playability['impossible_swaps'] > 0:
+            hard_fail_reasons.append(f"Impossible swaps: {playability['impossible_swaps']}")
 
-        bell_fairness_score = ArrangementValidator._calculate_bell_fairness_score(arrangement)
-        fatigue_fairness_score = ArrangementValidator._calculate_fatigue_fairness_score(arrangement, music_data)
+        hard_fail = len(hard_fail_reasons) > 0
+        final_score = 0 if hard_fail else round(
+            playability['score'] + bell_fairness['score'] + fatigue_fairness['score'], 2
+        )
 
-        score = playability['score'] + bell_fairness_score + fatigue_fairness_score
-        return min(100, max(0, round(score, 2)))
+        return {
+            'hard_fail': hard_fail,
+            'hard_fail_reasons': hard_fail_reasons,
+            'weights': {'playability': 50, 'bell_fairness': 30, 'fatigue_fairness': 20},
+            'components': {
+                'playability': {'earned': round(playability['score'], 2), 'max': 50},
+                'bell_fairness': {'earned': round(bell_fairness['score'], 2), 'max': 30},
+                'fatigue_fairness': {'earned': round(fatigue_fairness['score'], 2), 'max': 20},
+            },
+            'penalties': {
+                'dropped_notes': dropped_count,
+                'impossible_swaps': playability['impossible_swaps'],
+                'players_over_five_swaps': playability['players_over_five_swaps'],
+                'hand_load_pressure_events': playability['hand_load_pressure_events'],
+                'over_swap_penalty': round(playability['over_swap_penalty'], 2),
+                'hand_pressure_penalty': round(playability['hand_pressure_penalty'], 2),
+                'bell_fairness_below_two_players': bell_fairness['players_below_two'],
+                'bell_fairness_spread': bell_fairness['spread'],
+                'bell_fairness_penalty_a': bell_fairness['penalty_a'],
+                'bell_fairness_penalty_b': bell_fairness['penalty_b'],
+                'fatigue_cv': round(fatigue_fairness['cv'], 4),
+                'fatigue_max_to_median_ratio': round(fatigue_fairness['max_to_median_ratio'], 4),
+                'fatigue_ratio_penalty': round(fatigue_fairness['ratio_penalty'], 2),
+            },
+            'final_score': min(100, max(0, final_score)),
+        }
 
     @staticmethod
     def _count_dropped_notes(arrangement, music_data):
@@ -184,26 +230,43 @@ class ArrangementValidator:
     @staticmethod
     def _calculate_bell_fairness_score(arrangement):
         """Bell fairness score (0-30): >=2 bells/player and spread <=1 are rewarded."""
+        return ArrangementValidator._calculate_bell_fairness_details(arrangement)['score']
+
+    @staticmethod
+    def _calculate_bell_fairness_details(arrangement):
+        """Bell fairness detail object (score and penalty inputs)."""
         bell_counts = [len(player_data.get('bells', [])) for player_data in arrangement.values()]
         if not bell_counts:
-            return 0
+            return {'score': 0, 'players_below_two': 0, 'spread': 0, 'penalty_a': 0, 'penalty_b': 0}
         players_below_two = sum(1 for c in bell_counts if c < 2)
         spread = max(bell_counts) - min(bell_counts)
         penalty_a = min(20, players_below_two * 8)
         penalty_b = 0 if spread <= 1 else min(18, (spread - 1) * 6)
-        return max(0, 30 - penalty_a - penalty_b)
+        return {
+            'score': max(0, 30 - penalty_a - penalty_b),
+            'players_below_two': players_below_two,
+            'spread': spread,
+            'penalty_a': penalty_a,
+            'penalty_b': penalty_b,
+        }
 
     @staticmethod
     def _calculate_playability_score(arrangement, music_data, min_gap_ms=1000):
         """Playability score (0-50) with impossible swap detection and swap/load penalties."""
         if not music_data or not music_data.get('notes'):
-            return {'score': 50, 'impossible_swaps': 0}
+            return {
+                'score': 50, 'impossible_swaps': 0, 'players_over_five_swaps': [],
+                'hand_load_pressure_events': 0, 'over_swap_penalty': 0, 'hand_pressure_penalty': 0
+            }
 
         from app.services.music_parser import MusicParser
 
         notes = music_data.get('notes', [])
         if not notes:
-            return {'score': 50, 'impossible_swaps': 0}
+            return {
+                'score': 50, 'impossible_swaps': 0, 'players_over_five_swaps': [],
+                'hand_load_pressure_events': 0, 'over_swap_penalty': 0, 'hand_pressure_penalty': 0
+            }
 
         def to_ms(raw):
             fmt = music_data.get('format', 'midi')
@@ -216,8 +279,9 @@ class ArrangementValidator:
         total_pressure_events = 0
         impossible_swaps = 0
         swap_counts = []
+        players_over_five_swaps = []
 
-        for player_data in arrangement.values():
+        for player_name, player_data in arrangement.items():
             bells = player_data.get('bells', [])
             if len(bells) < 2:
                 continue
@@ -250,48 +314,64 @@ class ArrangementValidator:
 
             player_events.sort(key=lambda e: e['start_ms'])
             last_by_hand = {'left': None, 'right': None}
-            player_hand_swaps = 0
-            current_hand = None
+            player_bell_swaps = 0
 
             for ev in player_events:
-                if current_hand is not None and ev['hand'] != current_hand:
-                    player_hand_swaps += 1
-                current_hand = ev['hand']
-
                 prev = last_by_hand[ev['hand']]
                 if prev is not None:
-                    onset_gap = ev['start_ms'] - prev['start_ms']
-                    if onset_gap < min_gap_ms:
-                        total_pressure_events += 1
                     if ev['bell'] != prev['bell']:
+                        player_bell_swaps += 1
                         swap_gap = ev['start_ms'] - prev['end_ms']
+                        if swap_gap < min_gap_ms:
+                            total_pressure_events += 1
                         if swap_gap < min_gap_ms:
                             impossible_swaps += 1
                 last_by_hand[ev['hand']] = ev
 
-            swap_counts.append(player_hand_swaps)
+            swap_counts.append(player_bell_swaps)
+            if player_bell_swaps > 5:
+                players_over_five_swaps.append(player_name)
 
         # Hard-fail criterion is returned for caller to gate final score.
         if impossible_swaps > 0:
-            return {'score': 0, 'impossible_swaps': impossible_swaps}
+            return {
+                'score': 0,
+                'impossible_swaps': impossible_swaps,
+                'players_over_five_swaps': players_over_five_swaps,
+                'hand_load_pressure_events': total_pressure_events,
+                'over_swap_penalty': 0,
+                'hand_pressure_penalty': 0,
+            }
 
         over_swap_penalty = min(24, sum(max(0, swaps - 5) * 4 for swaps in swap_counts))
         hand_pressure_penalty = min(20, total_pressure_events * 1.5)
         score = max(0, 50 - over_swap_penalty - hand_pressure_penalty)
-        return {'score': score, 'impossible_swaps': 0}
+        return {
+            'score': score,
+            'impossible_swaps': 0,
+            'players_over_five_swaps': players_over_five_swaps,
+            'hand_load_pressure_events': total_pressure_events,
+            'over_swap_penalty': over_swap_penalty,
+            'hand_pressure_penalty': hand_pressure_penalty,
+        }
 
     @staticmethod
     def _calculate_fatigue_fairness_score(arrangement, music_data):
         """Fatigue fairness score (0-20) using absolute workload (duration_ms * weight_oz)."""
+        return ArrangementValidator._calculate_fatigue_fairness_details(arrangement, music_data)['score']
+
+    @staticmethod
+    def _calculate_fatigue_fairness_details(arrangement, music_data):
+        """Fatigue fairness detail object (score and intermediate stats)."""
         if not music_data or not music_data.get('notes'):
-            return 20
+            return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}
 
         from app.services.music_parser import MusicParser
         from app.services.simulation_builder import SimulationBuilder
 
         notes = music_data.get('notes', [])
         if not notes:
-            return 20
+            return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}
 
         def to_ms(raw):
             fmt = music_data.get('format', 'midi')
@@ -326,22 +406,30 @@ class ArrangementValidator:
             fatigue_values.append(fatigue)
 
         if not fatigue_values or max(fatigue_values) == 0:
-            return 20
+            return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}
 
         mean_fatigue = sum(fatigue_values) / len(fatigue_values)
         if mean_fatigue <= 0:
-            return 20
+            return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}
 
         std_dev = statistics.pstdev(fatigue_values)
         cv = std_dev / mean_fatigue
         score = 20 * max(0, 1 - min(cv, 1.0))
 
         median = statistics.median(fatigue_values)
+        ratio_penalty = 0.0
+        max_ratio = 1.0
         if median > 0:
             max_ratio = max(fatigue_values) / median
             if max_ratio > 2.0:
-                score -= min(8, (max_ratio - 2.0) * 4)
+                ratio_penalty = min(8, (max_ratio - 2.0) * 4)
+                score -= ratio_penalty
 
-        return max(0, min(20, score))
+        return {
+            'score': max(0, min(20, score)),
+            'cv': cv,
+            'max_to_median_ratio': max_ratio,
+            'ratio_penalty': ratio_penalty,
+        }
 
 

@@ -71,8 +71,8 @@ def test_quality_score_penalizes_players_with_over_five_swaps():
     """Playability score should drop when a player exceeds 5 swaps."""
     arrangement = {
         "Player 1": {
-            "bells": ["C4", "D4"],
-            "left_hand": ["C4"],
+            "bells": ["C4", "D4", "E4"],
+            "left_hand": ["C4", "E4"],
             "right_hand": ["D4"],
         }
     }
@@ -80,18 +80,18 @@ def test_quality_score_penalizes_players_with_over_five_swaps():
     low_swaps_notes = []
     for i in range(12):
         # 1200 ticks between starts, 120 duration => large safe gaps
-        high_swaps_notes.append({"pitch": 60 if i % 2 == 0 else 62, "time": i * 1200, "duration": 120})
-        low_swaps_notes.append({"pitch": 60 if i < 6 else 62, "time": i * 1200, "duration": 120})
+        high_swaps_notes.append({"pitch": 60 if i % 2 == 0 else 64, "time": i * 1200, "duration": 120})
+        low_swaps_notes.append({"pitch": 60 if i < 6 else 64, "time": i * 1200, "duration": 120})
 
     high_swaps_data = {
-        "unique_notes": [60, 62],
+        "unique_notes": [60, 64],
         "notes": high_swaps_notes,
         "format": "midi",
         "tempo": 120,
         "ticks_per_beat": 480,
     }
     low_swaps_data = {
-        "unique_notes": [60, 62],
+        "unique_notes": [60, 64],
         "notes": low_swaps_notes,
         "format": "midi",
         "tempo": 120,
@@ -125,6 +125,80 @@ def test_quality_score_hard_fails_on_impossible_swaps():
         "ticks_per_beat": 480,
     }
     assert ArrangementValidator.calculate_quality_score(arrangement, music_data) == 0
+
+
+def test_quality_breakdown_exposes_component_details():
+    """Breakdown should include weights, component earned/max, penalties and final score."""
+    arrangement = {
+        "P1": {"bells": ["C4", "D4"], "left_hand": ["C4"], "right_hand": ["D4"]},
+        "P2": {"bells": ["E4", "F4"], "left_hand": ["E4"], "right_hand": ["F4"]},
+    }
+    music_data = {
+        "unique_notes": [60, 62, 64, 65],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 120},
+            {"pitch": 62, "time": 1200, "duration": 120},
+            {"pitch": 64, "time": 2400, "duration": 120},
+            {"pitch": 65, "time": 3600, "duration": 120},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    breakdown = ArrangementValidator.calculate_quality_breakdown(arrangement, music_data)
+    assert breakdown["weights"] == {"playability": 50, "bell_fairness": 30, "fatigue_fairness": 20}
+    assert "components" in breakdown and "penalties" in breakdown
+    assert breakdown["components"]["playability"]["max"] == 50
+    assert breakdown["components"]["bell_fairness"]["max"] == 30
+    assert breakdown["components"]["fatigue_fairness"]["max"] == 20
+    assert isinstance(breakdown["final_score"], (int, float))
+
+
+def test_quality_breakdown_hard_fail_reasons_present():
+    """Hard-fail breakdown should include a dropped-notes reason."""
+    arrangement = {
+        "Player 1": {"bells": ["C4"], "left_hand": ["C4"], "right_hand": []},
+    }
+    music_data = {
+        "unique_notes": [60, 62],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 120},
+            {"pitch": 62, "time": 1200, "duration": 120},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    breakdown = ArrangementValidator.calculate_quality_breakdown(arrangement, music_data)
+    assert breakdown["hard_fail"] is True
+    assert any("Dropped notes" in r for r in breakdown["hard_fail_reasons"])
+    assert breakdown["final_score"] == 0
+
+
+def test_pressure_events_ignore_same_bell_repeats():
+    """Fast repeats of the same bell on one hand should not count as pressure events."""
+    arrangement = {
+        "Player 1": {
+            "bells": ["C4", "D4"],
+            "left_hand": ["C4"],
+            "right_hand": ["D4"],
+        }
+    }
+    music_data = {
+        "unique_notes": [60, 62],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 120},
+            {"pitch": 60, "time": 240, "duration": 120},
+            {"pitch": 60, "time": 480, "duration": 120},
+            {"pitch": 62, "time": 2000, "duration": 120},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    breakdown = ArrangementValidator.calculate_quality_breakdown(arrangement, music_data)
+    assert breakdown["hard_fail"] is False
+    assert breakdown["penalties"]["hand_load_pressure_events"] == 0
 
 
 def test_assign_bells_adds_virtual_player_when_gap_blocks_both_hands():

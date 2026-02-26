@@ -113,7 +113,8 @@ class ArrangementGenerator:
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
                 sustainability = ArrangementValidator.sustainability_check(assignment, music_data)
-                quality_score = ArrangementValidator.calculate_quality_score(assignment, music_data)
+                quality_breakdown = ArrangementValidator.calculate_quality_breakdown(assignment, music_data)
+                quality_score = quality_breakdown.get('final_score', 0)
                 
                 # Calculate actual swaps for each player based on note sequence
                 swap_counts = SwapCounter.calculate_swaps_for_arrangement(assignment, music_data)
@@ -133,6 +134,7 @@ class ArrangementGenerator:
                     'validation': validation,
                     'sustainability': sustainability,
                     'quality_score': quality_score,
+                    'quality_breakdown': quality_breakdown,
                     'note_count': len(unique_notes),
                     'melody_count': len(melody_notes),
                     'players': len(expanded_players)
