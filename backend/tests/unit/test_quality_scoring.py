@@ -104,7 +104,7 @@ def test_quality_score_penalizes_players_with_over_five_swaps():
 
 
 def test_quality_score_hard_fails_on_impossible_swaps():
-    """Score should be 0 when same-hand swaps need less than 1s gap."""
+    """Score should be 0 when same-hand swaps need less than Config.IMPOSSIBLE_SWAP_GAP_MS (500ms)."""
     arrangement = {
         "Player 1": {
             "bells": ["C4", "D4", "E4"],
@@ -112,13 +112,14 @@ def test_quality_score_hard_fails_on_impossible_swaps():
             "right_hand": ["D4"],
         }
     }
-    # Left-hand C4 -> E4 gap is 500ms (impossible by 1s threshold)
+    # Left-hand C4 -> E4 gap is ~250ms (< 500ms IMPOSSIBLE_SWAP_GAP_MS threshold)
+    # At 120 BPM, 480 ticks/beat: C4 ends at tick 480 (500ms), E4 starts at tick 720 (750ms) → 250ms gap
     music_data = {
         "unique_notes": [60, 62, 64],
         "notes": [
             {"pitch": 60, "time": 0, "duration": 480},
             {"pitch": 62, "time": 480, "duration": 120},
-            {"pitch": 64, "time": 960, "duration": 240},
+            {"pitch": 64, "time": 720, "duration": 240},
         ],
         "format": "midi",
         "tempo": 120,

@@ -6,6 +6,8 @@ Validates arrangements against bell-assignment strategy requirements
 import logging
 import statistics
 
+from config import Config
+
 logger = logging.getLogger(__name__)
 
 class ArrangementValidator:
@@ -251,8 +253,15 @@ class ArrangementValidator:
         }
 
     @staticmethod
-    def _calculate_playability_score(arrangement, music_data, min_gap_ms=1000):
-        """Playability score (0-50) with impossible swap detection and swap/load penalties."""
+    def _calculate_playability_score(arrangement, music_data, pressure_gap_ms=1000):
+        """Playability score (0-50) with impossible swap detection and swap/load penalties.
+
+        Uses two separate thresholds:
+        - ``Config.IMPOSSIBLE_SWAP_GAP_MS`` (hard-fail): a same-hand bell swap with a gap
+          below this value is physically impossible to perform.
+        - ``pressure_gap_ms`` (penalty only): a swap that is achievable but tight enough to
+          count as a pressure event and reduce the playability score.
+        """
         if not music_data or not music_data.get('notes'):
             return {
                 'score': 50, 'impossible_swaps': 0, 'players_over_five_swaps': [],
@@ -322,9 +331,9 @@ class ArrangementValidator:
                     if ev['bell'] != prev['bell']:
                         player_bell_swaps += 1
                         swap_gap = ev['start_ms'] - prev['end_ms']
-                        if swap_gap < min_gap_ms:
+                        if swap_gap < pressure_gap_ms:
                             total_pressure_events += 1
-                        if swap_gap < min_gap_ms:
+                        if swap_gap < Config.IMPOSSIBLE_SWAP_GAP_MS:
                             impossible_swaps += 1
                 last_by_hand[ev['hand']] = ev
 
