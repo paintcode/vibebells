@@ -166,6 +166,24 @@ def test_score_bell_at_capacity():
     print("✓ test_score_bell_at_capacity passed")
 
 
+def test_calculate_pair_swap_cost():
+    """Test pair swap-cost helper returns transitions and gaps."""
+    notes = [
+        {'pitch': 60, 'time': 0, 'duration': 100},
+        {'pitch': 62, 'time': 200, 'duration': 100},
+        {'pitch': 60, 'time': 400, 'duration': 100},
+        {'pitch': 62, 'time': 600, 'duration': 100},
+        {'pitch': 64, 'time': 800, 'duration': 100},
+    ]
+
+    result = SwapCostCalculator.calculate_pair_swap_cost(60, 62, notes)
+    assert result['transitions'] == 3, f"Expected 3 transitions, got {result['transitions']}"
+    assert len(result['gaps']) == 3, f"Expected 3 gaps, got {len(result['gaps'])}"
+    assert result['avg_gap'] == 100, f"Expected avg gap 100, got {result['avg_gap']}"
+
+    print("✓ test_calculate_pair_swap_cost passed")
+
+
 def run_all_tests():
     """Run all tests"""
     print("\n" + "=" * 60)
@@ -179,6 +197,7 @@ def run_all_tests():
     test_swap_cost_for_player_many_swaps()
     test_score_bell_for_player()
     test_score_bell_at_capacity()
+    test_calculate_pair_swap_cost()
     
     print("\n" + "=" * 60)
     print("✅ All swap cost tests passed!")

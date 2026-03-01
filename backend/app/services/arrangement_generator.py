@@ -59,11 +59,15 @@ class ArrangementGenerator:
             logger.info(f"Expanded to {len(expanded_players)} total players (added {len(expanded_players) - len(players)} virtual players)")
         
         # Generate multiple arrangements with different strategies
+        expanded_player_names = {p['name'] for p in expanded_players}
+        max_actual_player_count = len(expanded_players)
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
             ('balanced', 'Evenly distribute melody notes'),
-            ('min_transitions', 'Minimize player transitions'),
+            ('min_transitions', 'Minimize player transitions (pair-first)'),
+            ('fatigue_snake', 'Balance weighted fatigue with snake distribution'),
+            ('activity_snake', 'Balance active play time with snake distribution'),
         ]
         
         for strategy, description in strategies:
@@ -109,7 +113,16 @@ class ArrangementGenerator:
                 assignment = ConflictResolver.resolve_duplicates(assignment)
                 assignment = ConflictResolver.balance_assignments(assignment)
                 assignment = ConflictResolver.optimize_for_experience(assignment, expanded_players)
-                
+
+                # Detect virtual players added by bell_assignment.py swap-gap fallback
+                extra_vp = [name for name in assignment if name not in expanded_player_names]
+                if extra_vp:
+                    players_expanded = True
+                    actual_count = len(expanded_players) + len(extra_vp)
+                    max_actual_player_count = max(max_actual_player_count, actual_count)
+                    if minimum_required_players is None or actual_count > minimum_required_players:
+                        minimum_required_players = actual_count
+
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
                 sustainability = ArrangementValidator.sustainability_check(assignment, music_data)
@@ -158,7 +171,7 @@ class ArrangementGenerator:
             'expanded': players_expanded,
             'minimum_players': minimum_required_players,
             'original_player_count': len(players),
-            'final_player_count': len(expanded_players)
+            'final_player_count': max_actual_player_count
         }
     
     @staticmethod

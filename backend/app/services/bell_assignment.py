@@ -14,7 +14,7 @@ class BellAssignmentAlgorithm:
         Args:
             notes: List of unique note names (e.g., ['C4', 'D4', 'E4'])
             players: List of player dicts with 'name' and 'experience'
-            strategy: Assignment strategy ('experienced_first', 'balanced', 'min_transitions')
+            strategy: Assignment strategy ('experienced_first', 'balanced', 'min_transitions', 'fatigue_snake', 'activity_snake')
             priority_notes: Optional list of notes to prioritize (e.g., melody notes)
             config: Optional config dict with MAX_BELLS_PER_PLAYER, MIN_SWAP_GAP_MS,
                     TEMPO_BPM, TICKS_PER_BEAT, MUSIC_FORMAT
@@ -93,6 +93,16 @@ class BellAssignmentAlgorithm:
             assignments = BellAssignmentAlgorithm._assign_min_transitions(
                 notes, sorted_players, assignments, player_bell_counts, priority_notes, max_bells_per_player, note_timings, note_frequencies,
                 timing_config=timing_config
+            )
+        elif strategy == 'fatigue_snake':
+            assignments = BellAssignmentAlgorithm._assign_snake(
+                notes, sorted_players, assignments, player_bell_counts, max_bells_per_player,
+                note_timings=note_timings, timing_config=timing_config, metric='fatigue'
+            )
+        elif strategy == 'activity_snake':
+            assignments = BellAssignmentAlgorithm._assign_snake(
+                notes, sorted_players, assignments, player_bell_counts, max_bells_per_player,
+                note_timings=note_timings, timing_config=timing_config, metric='activity'
             )
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
@@ -226,6 +236,130 @@ class BellAssignmentAlgorithm:
                 return True
 
         return False
+
+    @staticmethod
+    def _try_assign_pair_same_hand(assignment, bell_a, bell_b, note_timings, timing_config, experience):
+        """Try to assign a bell pair to the same hand for a player."""
+        hand_map = assignment.get('_hand_map', {})
+        left_bells, right_bells = [], []
+        for idx, b in enumerate(assignment['bells']):
+            hand = hand_map.get(b, 'left' if idx % 2 == 0 else 'right')
+            (left_bells if hand == 'left' else right_bells).append(b)
+
+        hand_order = [('left', left_bells), ('right', right_bells)]
+        if len(right_bells) < len(left_bells):
+            hand_order = [('right', right_bells), ('left', left_bells)]
+
+        for target_hand, hand_bells in hand_order:
+            if not BellAssignmentAlgorithm._check_swap_gap_for_hand(
+                    hand_bells, bell_a, note_timings, timing_config, experience):
+                continue
+            if not BellAssignmentAlgorithm._check_swap_gap_for_hand(
+                    hand_bells + [bell_a], bell_b, note_timings, timing_config, experience):
+                continue
+            assignment['bells'].append(bell_a)
+            assignment['bells'].append(bell_b)
+            assignment.setdefault('_hand_map', {})[bell_a] = target_hand
+            assignment.setdefault('_hand_map', {})[bell_b] = target_hand
+            return True
+        return False
+
+    @staticmethod
+    def _get_note_ms(note, timing_config):
+        """Convert note timing fields to (start_ms, end_ms)."""
+        if not timing_config:
+            t = note.get('time', note.get('offset', 0))
+            d = note.get('duration', 0)
+            return float(t), float(t + d)
+        fmt = timing_config.get('fmt', 'midi')
+        tpb = max(timing_config.get('ticks_per_beat', 480), 1)
+        bpm = max(timing_config.get('tempo_bpm', 120), 1)
+
+        def to_ms(raw):
+            return raw / tpb * (60000.0 / bpm) if fmt == 'midi' else raw * (60000.0 / bpm)
+
+        t_raw = note.get('time', note.get('offset', 0))
+        d_raw = note.get('duration', 0)
+        start_ms = to_ms(t_raw)
+        return start_ms, start_ms + to_ms(d_raw)
+
+    @staticmethod
+    def _build_pair_costs(notes, note_timings, timing_config):
+        """Build pair cost list sorted by lowest swap transitions then largest avg gap."""
+        from app.services.swap_cost_calculator import SwapCostCalculator
+        costs = []
+        for i in range(len(notes)):
+            for j in range(i + 1, len(notes)):
+                a = notes[i]
+                b = notes[j]
+                try:
+                    pa = MusicParser.note_name_to_pitch(a)
+                    pb = MusicParser.note_name_to_pitch(b)
+                except (ValueError, KeyError):
+                    continue
+                pair = SwapCostCalculator.calculate_pair_swap_cost(pa, pb, note_timings or [])
+                costs.append({
+                    'pair': (a, b),
+                    'transitions': pair['transitions'],
+                    'avg_gap': pair['avg_gap'],
+                })
+        costs.sort(key=lambda x: (x['transitions'], -x['avg_gap']))
+        return costs
+
+    @staticmethod
+    def _assign_snake(notes, players, assignments, counts, max_bells_per_player, note_timings=None, timing_config=None, metric='fatigue'):
+        """Assign bells in snake order, ranked by either fatigue or activity contribution."""
+        from app.services.simulation_builder import SimulationBuilder
+
+        if not notes:
+            return assignments
+
+        score_by_note = {n: 0.0 for n in notes}
+        if note_timings:
+            for ev in note_timings:
+                p = ev.get('pitch')
+                if p is None:
+                    continue
+                note_name = MusicParser.pitch_to_note_name(p)
+                if note_name not in score_by_note:
+                    continue
+                start_ms, end_ms = BellAssignmentAlgorithm._get_note_ms(ev, timing_config)
+                dur_ms = max(0.0, end_ms - start_ms)
+                if metric == 'fatigue':
+                    _, wt_oz, _ = SimulationBuilder._get_bell_data(p)
+                    score_by_note[note_name] += dur_ms * wt_oz
+                else:
+                    score_by_note[note_name] += dur_ms
+
+        ordered_notes = sorted(notes, key=lambda n: score_by_note.get(n, 0.0), reverse=True)
+        if len(players) == 1:
+            snake_idx = [0]
+        else:
+            snake_idx = list(range(len(players))) + list(range(len(players) - 2, 0, -1))
+        ptr = 0
+
+        for note in ordered_notes:
+            assigned = False
+            tried = set()
+            for k in range(max(1, len(snake_idx))):
+                idx = snake_idx[(ptr + k) % len(snake_idx)]
+                if idx in tried:
+                    continue
+                tried.add(idx)
+                player = players[idx]
+                pname = player['name']
+                exp = player.get('experience', 'beginner')
+                max_for_exp = max_bells_per_player.get(exp, 2)
+                if counts[pname] >= max_for_exp:
+                    continue
+                if BellAssignmentAlgorithm._try_extra_bell(assignments[pname], note, note_timings, timing_config, exp):
+                    counts[pname] += 1
+                    assigned = True
+                    ptr = (ptr + 1) % len(snake_idx)
+                    break
+            if not assigned:
+                logger.debug(f"{metric}_snake: note {note!r} not assignable in snake pass; virtual fallback may handle it")
+        return assignments
 
     @staticmethod
     def _assign_experienced_first(notes, players, assignments, counts, priority_notes=None, max_bells_per_player=None, note_frequencies=None, note_timings=None, timing_config=None):
@@ -378,100 +512,104 @@ class BellAssignmentAlgorithm:
     
     @staticmethod
     def _assign_min_transitions(notes, players, assignments, counts, priority_notes=None, max_bells_per_player=None, note_timings=None, note_frequencies=None, timing_config=None):
-        """Assign notes with swap cost optimization: minimize hand swaps.
-        
-        Experience-level constraints:
-        - Beginner: max 2 bells (1 per hand, hard limit)
-        - Intermediate: max 3 bells
-        - Experienced: max 5 bells
-        
-        Sorts non-priority notes by frequency (descending) so most-played bells are assigned first.
-        Least-played bells remain for extra bell slots.
-        If note_timings provided, uses SwapCostCalculator to prefer bells that require fewer hand swaps.
-        """
-        
+        """Pair-first min transitions: preselect low-cost bell pairs, then assign remaining notes."""
+
         if max_bells_per_player is None:
             max_bells_per_player = {'experienced': 5, 'intermediate': 3, 'beginner': 2}
-        
-        from app.services.swap_cost_calculator import SwapCostCalculator
-        
+
         priority_notes = priority_notes or []
         non_priority = [n for n in notes if n not in priority_notes]
-        
-        # Sort non-priority notes by frequency (most frequent first)
-        # This ensures frequent bells are assigned early, leaving rare bells for extras
         if note_frequencies:
             non_priority.sort(key=lambda n: note_frequencies.get(n, 0), reverse=True)
-            logger.debug(f"Sorted {len(non_priority)} non-priority notes by frequency (descending)")
-        
+
         all_notes = list(priority_notes) + non_priority
-        
-        # Phase 1: Ensure every player gets at least 2 bells
-        for _ in range(2):  # Two rounds to give each player 2 bells
-            for note in all_notes:
-                if all([counts[p['name']] >= 2 for p in players]):
-                    # All players have 2 bells, move to phase 2
+        assigned_notes = set()
+
+        extra_bells_needed = max(0, len(all_notes) - (len(players) * 2))
+        pair_count_needed = extra_bells_needed
+
+        pair_costs = BellAssignmentAlgorithm._build_pair_costs(all_notes, note_timings, timing_config)
+        selected_pairs = []
+        used_bells = set()
+        for info in pair_costs:
+            if len(selected_pairs) >= pair_count_needed:
+                break
+            a, b = info['pair']
+            if a in used_bells or b in used_bells:
+                continue
+            selected_pairs.append((a, b))
+            used_bells.add(a)
+            used_bells.add(b)
+        if len(selected_pairs) < pair_count_needed:
+            for info in pair_costs:
+                if len(selected_pairs) >= pair_count_needed:
                     break
-                
-                # Find player with fewest bells
-                min_player = min(players, key=lambda p: counts[p['name']])
-                if counts[min_player['name']] < 2:
-                    if note not in [b for p_data in assignments.values() for b in p_data['bells']]:
-                        assignments[min_player['name']]['bells'].append(note)
-                        counts[min_player['name']] += 1
-        
-        # Phase 2: Assign remaining notes with swap cost optimization (if timings available)
-        remaining_notes = [n for n in all_notes if n not in [b for p_data in assignments.values() for b in p_data['bells']]]
-        
-        if note_timings and len(remaining_notes) > 0:
-            for note in remaining_notes:
-                best_player = None
-                best_score = float('inf')
+                a, b = info['pair']
+                if (a, b) in selected_pairs or a in used_bells or b in used_bells:
+                    continue
+                selected_pairs.append((a, b))
+                used_bells.add(a)
+                used_bells.add(b)
 
-                # Find player with lowest swap cost whose hand can accept this bell
-                for player in players:
-                    experience = player.get('experience', 'beginner')
-                    max_for_exp = max_bells_per_player.get(experience, 2)
-                    if counts[player['name']] >= max_for_exp:
+        # Fair pair distribution: players with fewer pairs go first.
+        pair_load = {p['name']: 0 for p in players}
+        unplaced_pairs = list(selected_pairs)
+        while unplaced_pairs:
+            progress = False
+            ordered_players = sorted(players, key=lambda p: (pair_load[p['name']], players.index(p)))
+            for player in ordered_players:
+                pname = player['name']
+                exp = player.get('experience', 'beginner')
+                max_for_exp = max_bells_per_player.get(exp, 2)
+                if counts[pname] + 2 > max_for_exp:
+                    continue
+                chosen_idx = None
+                for idx, (a, b) in enumerate(unplaced_pairs):
+                    if a in assigned_notes or b in assigned_notes:
                         continue
-                    # Check feasibility (both hands) without committing yet
-                    hand_map = assignments[player['name']].get('_hand_map', {})
-                    left_b = [b for i, b in enumerate(assignments[player['name']]['bells'])
-                               if hand_map.get(b, 'left' if i % 2 == 0 else 'right') == 'left']
-                    right_b = [b for i, b in enumerate(assignments[player['name']]['bells'])
-                                if hand_map.get(b, 'left' if i % 2 == 0 else 'right') == 'right']
-                    feasible = any(
-                        BellAssignmentAlgorithm._check_swap_gap_for_hand(
-                            hb, note, note_timings, timing_config, experience)
-                        for hb in [left_b, right_b]
-                    )
-                    if not feasible:
-                        continue
-                    note_pitch = MusicParser.note_name_to_pitch(note)
-                    score = SwapCostCalculator.score_bell_for_player(
-                        assignments[player['name']], note_pitch, note_timings,
-                        weights={'swap': 0.5, 'frequency': 0.3, 'isolation': 0.2}
-                    )
-                    if score < best_score:
-                        best_score = score
-                        best_player = player
+                    if BellAssignmentAlgorithm._try_assign_pair_same_hand(
+                            assignments[pname], a, b, note_timings, timing_config, exp):
+                        chosen_idx = idx
+                        break
+                if chosen_idx is not None:
+                    a, b = unplaced_pairs.pop(chosen_idx)
+                    assigned_notes.add(a)
+                    assigned_notes.add(b)
+                    counts[pname] += 2
+                    pair_load[pname] += 1
+                    progress = True
+            if not progress:
+                break
 
-                if best_player:
-                    experience = best_player.get('experience', 'beginner')
-                    if BellAssignmentAlgorithm._try_extra_bell(
-                            assignments[best_player['name']], note, note_timings, timing_config, experience):
-                        counts[best_player['name']] += 1
-        else:
-            # Fallback: least-loaded player that can accept the bell on either hand
-            for note in remaining_notes:
-                for player in sorted(players, key=lambda p: counts[p['name']]):
-                    experience = player.get('experience', 'beginner')
-                    max_for_exp = max_bells_per_player.get(experience, 2)
-                    if counts[player['name']] < max_for_exp:
-                        if BellAssignmentAlgorithm._try_extra_bell(
-                                assignments[player['name']], note, note_timings, timing_config, experience):
-                            counts[player['name']] += 1
-                            break
+        # Ensure each player reaches at least 2 bells, then fill extras.
+        remaining_priority = [n for n in priority_notes if n not in assigned_notes]
+        remaining_non_priority = [n for n in non_priority if n not in assigned_notes]
+        remaining_all = remaining_priority + [n for n in remaining_non_priority if n not in remaining_priority]
+
+        for _ in range(2):
+            for player in players:
+                pname = player['name']
+                if counts[pname] >= 2 or not remaining_all:
+                    continue
+                note = remaining_all.pop(0)
+                assignments[pname]['bells'].append(note)
+                counts[pname] += 1
+                assigned_notes.add(note)
+
+        for note in list(remaining_all):
+            if note in assigned_notes:
+                continue
+            for player in players:
+                pname = player['name']
+                exp = player.get('experience', 'beginner')
+                max_for_exp = max_bells_per_player.get(exp, 2)
+                if counts[pname] >= max_for_exp:
+                    continue
+                if BellAssignmentAlgorithm._try_extra_bell(
+                        assignments[pname], note, note_timings, timing_config, exp):
+                    counts[pname] += 1
+                    assigned_notes.add(note)
+                    break
 
         return assignments
     
