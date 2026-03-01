@@ -290,6 +290,25 @@ class ArrangementValidator:
         swap_counts = []
         players_over_five_swaps = []
 
+        # Pre-index note timing data by note name once (O(notes)) to avoid an
+        # O(players × notes) inner loop.  Hand assignment is applied per-player
+        # below because each player has a different hand map.
+        notes_by_name = {}
+        for n in notes:
+            pitch = n.get('pitch')
+            if pitch is None:
+                continue
+            note_name = MusicParser.pitch_to_note_name(pitch)
+            start_ms = to_ms(n.get('time', n.get('offset', 0)))
+            dur_ms = to_ms(n.get('duration', 0))
+            if note_name not in notes_by_name:
+                notes_by_name[note_name] = []
+            notes_by_name[note_name].append({
+                'start_ms': start_ms,
+                'end_ms': start_ms + dur_ms,
+                'bell': note_name,
+            })
+
         for player_name, player_data in arrangement.items():
             bells = player_data.get('bells', [])
             if len(bells) < 2:
@@ -305,21 +324,10 @@ class ArrangementValidator:
                     hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
 
             player_events = []
-            for n in notes:
-                pitch = n.get('pitch')
-                if pitch is None:
-                    continue
-                note_name = MusicParser.pitch_to_note_name(pitch)
-                if note_name not in bells:
-                    continue
-                start_ms = to_ms(n.get('time', n.get('offset', 0)))
-                dur_ms = to_ms(n.get('duration', 0))
-                player_events.append({
-                    'start_ms': start_ms,
-                    'end_ms': start_ms + dur_ms,
-                    'bell': note_name,
-                    'hand': hand_map.get(note_name, 'left')
-                })
+            for bell in bells:
+                hand = hand_map.get(bell, 'left')
+                for ev in notes_by_name.get(bell, []):
+                    player_events.append({**ev, 'hand': hand})
 
             player_events.sort(key=lambda e: e['start_ms'])
             last_by_hand = {'left': None, 'right': None}
