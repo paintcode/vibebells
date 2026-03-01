@@ -390,29 +390,27 @@ class ArrangementValidator:
                 return raw / ticks_per_beat * (60000.0 / tempo)
             return raw * (60000.0 / tempo)
 
-        weights = {}
-        fatigue_values = []
+        # Pre-index fatigue contribution per note name (duration_ms * weight_oz, summed across all occurrences).
+        # This avoids an O(players × notes) loop by scanning notes only once.
+        pitch_to_weight_oz = {}  # pitch -> wt_oz (cached)
+        note_fatigue = {}   # note_name -> cumulative (dur_ms * wt_oz)
+        for n in notes:
+            pitch = n.get('pitch')
+            if pitch is None:
+                continue
+            note_name = MusicParser.pitch_to_note_name(pitch)
+            if pitch not in pitch_to_weight_oz:
+                pitch_to_weight_oz[pitch] = SimulationBuilder.get_bell_weight_oz(pitch)
+            dur_ms = to_ms(n.get('duration', 0))
+            note_fatigue[note_name] = note_fatigue.get(note_name, 0.0) + dur_ms * pitch_to_weight_oz[pitch]
 
+        fatigue_values = []
         for player_data in arrangement.values():
-            bells = set(player_data.get('bells', []))
+            bells = player_data.get('bells', [])
             if not bells:
                 fatigue_values.append(0.0)
                 continue
-
-            fatigue = 0.0
-            for n in notes:
-                pitch = n.get('pitch')
-                if pitch is None:
-                    continue
-                note_name = MusicParser.pitch_to_note_name(pitch)
-                if note_name not in bells:
-                    continue
-                if pitch not in weights:
-                    _, wt_oz, _ = SimulationBuilder._get_bell_data(pitch)
-                    weights[pitch] = wt_oz
-                dur_ms = to_ms(n.get('duration', 0))
-                fatigue += dur_ms * weights[pitch]
-            fatigue_values.append(fatigue)
+            fatigue_values.append(sum(note_fatigue.get(bell, 0.0) for bell in bells))
 
         if not fatigue_values or max(fatigue_values) == 0:
             return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}

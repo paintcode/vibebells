@@ -153,31 +153,34 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
               <span className="score-value">{Math.round(current.quality_score)}/100</span>
             </div>
             {scoreBreakdown && (
-              <div className="score-details">
+              <div className="score-details" data-testid="score-details">
                 <h4>Score details</h4>
                 <div className="score-details-grid">
-                  <div className="score-details-row">
+                  <div className="score-details-row" data-testid="score-details-playability">
                     <span>Playability</span>
-                    <span>{scoreBreakdown.components?.playability?.earned ?? 0}/{scoreBreakdown.components?.playability?.max ?? 50}</span>
+                    <span data-testid="score-details-playability-value">{scoreBreakdown.components?.playability?.earned ?? 0}/{scoreBreakdown.components?.playability?.max ?? 50}</span>
                   </div>
-                  <div className="score-details-row">
+                  <div className="score-details-row" data-testid="score-details-bell-fairness">
                     <span>Bell fairness</span>
-                    <span>{scoreBreakdown.components?.bell_fairness?.earned ?? 0}/{scoreBreakdown.components?.bell_fairness?.max ?? 30}</span>
+                    <span data-testid="score-details-bell-fairness-value">{scoreBreakdown.components?.bell_fairness?.earned ?? 0}/{scoreBreakdown.components?.bell_fairness?.max ?? 30}</span>
                   </div>
-                  <div className="score-details-row">
+                  <div className="score-details-row" data-testid="score-details-fatigue-fairness">
                     <span>Fatigue fairness</span>
-                    <span>{scoreBreakdown.components?.fatigue_fairness?.earned ?? 0}/{scoreBreakdown.components?.fatigue_fairness?.max ?? 20}</span>
+                    <span data-testid="score-details-fatigue-fairness-value">{scoreBreakdown.components?.fatigue_fairness?.earned ?? 0}/{scoreBreakdown.components?.fatigue_fairness?.max ?? 20}</span>
                   </div>
                 </div>
                 {scoreBreakdown.hard_fail ? (
-                  <div className="score-hard-fail">
-                    <strong>Hard fail:</strong> {scoreBreakdown.hard_fail_reasons?.join(', ') || 'Failed constraints'}
+                  <div className="score-hard-fail" data-testid="score-hard-fail">
+                    <strong>Hard fail:</strong>{' '}
+                    <span data-testid="score-hard-fail-reasons">
+                      {scoreBreakdown.hard_fail_reasons?.join(', ') || 'Failed constraints'}
+                    </span>
                   </div>
                 ) : (
-                  <div className="score-penalties">
-                    <span>Pressure events: {scoreBreakdown.penalties?.hand_load_pressure_events ?? 0}</span>
-                    <span>Over-swap players: {(scoreBreakdown.penalties?.players_over_five_swaps || []).join(', ') || 'None'}</span>
-                    <span>Bell spread: {scoreBreakdown.penalties?.bell_fairness_spread ?? 0}</span>
+                  <div className="score-penalties" data-testid="score-penalties">
+                    <span data-testid="score-penalties-pressure-events">Pressure events: {scoreBreakdown.penalties?.hand_load_pressure_events ?? 0}</span>
+                    <span data-testid="score-penalties-over-swap-players">Over-swap players: {(scoreBreakdown.penalties?.players_over_five_swaps || []).join(', ') || 'None'}</span>
+                    <span data-testid="score-penalties-bell-spread">Bell spread: {scoreBreakdown.penalties?.bell_fairness_spread ?? 0}</span>
                   </div>
                 )}
               </div>
