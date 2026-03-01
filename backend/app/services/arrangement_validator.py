@@ -410,7 +410,8 @@ class ArrangementValidator:
             if not bells:
                 fatigue_values.append(0.0)
                 continue
-            fatigue_values.append(sum(note_fatigue.get(bell, 0.0) for bell in bells))
+            unique_bells = set(bells)
+            fatigue_values.append(sum(note_fatigue.get(bell, 0.0) for bell in unique_bells))
 
         if not fatigue_values or max(fatigue_values) == 0:
             return {'score': 20, 'cv': 0.0, 'max_to_median_ratio': 1.0, 'ratio_penalty': 0.0}
