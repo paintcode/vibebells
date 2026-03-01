@@ -10,12 +10,23 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
   const [exporting, setExporting] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
 
-  if (!arrangements || arrangements.length === 0) {
+  const arrangementCount = arrangements?.length ?? 0;
+
+  useEffect(() => {
+    if (arrangementCount === 0) {
+      return;
+    }
+    if (selectedArrangement >= arrangementCount) {
+      setSelectedArrangement(0);
+    }
+  }, [arrangementCount, selectedArrangement]);
+
+  if (arrangementCount === 0) {
     return <p>No arrangements generated</p>;
   }
 
-  const current = arrangements[selectedArrangement];
-  const scoreBreakdown = current.quality_breakdown;
+  const current = arrangements[selectedArrangement] ?? arrangements[0];
+  const scoreBreakdown = current?.quality_breakdown;
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#4caf50';
