@@ -324,7 +324,7 @@ class ArrangementValidator:
                     hand_map[bell] = 'left' if idx % 2 == 0 else 'right'
 
             player_events = []
-            for bell in bells:
+            for bell in set(bells):
                 hand = hand_map.get(bell, 'left')
                 for ev in notes_by_name.get(bell, []):
                     player_events.append({**ev, 'hand': hand})
