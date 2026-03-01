@@ -97,6 +97,12 @@ class SimulationBuilder:
         return round(diam, 3), round(wt, 1), round(canvas_px, 1)
 
     @staticmethod
+    def get_bell_weight_oz(pitch):
+        """Return the bell weight in ounces for the given MIDI pitch."""
+        _, wt_oz, _ = SimulationBuilder._get_bell_data(pitch)
+        return wt_oz
+
+    @staticmethod
     def build(music_data, arrangement, tight_swap_threshold_ms=1000):
         """Build a simulation data structure for the given arrangement.
 

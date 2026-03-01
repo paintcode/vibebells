@@ -232,6 +232,56 @@ def test_pressure_events_ignore_same_bell_repeats():
     assert breakdown["penalties"]["hand_load_pressure_events"] == 0
 
 
+def test_fatigue_fairness_penalizes_unequal_workload():
+    """Fatigue fairness score should be lower when one player's workload is much heavier.
+
+    G2 (MIDI 43) weighs ~228 oz; C8 (MIDI 108) weighs ~8 oz.  Both players ring
+    the same duration, so the fatigue ratio is ~28× – well above the 2× threshold
+    that triggers a ratio_penalty and a high coefficient of variation.
+    """
+    # Heavily unbalanced: P1 gets the heaviest bell, P2 gets the lightest.
+    unbalanced = {
+        "P1": {"bells": ["G2"], "left_hand": ["G2"], "right_hand": []},
+        "P2": {"bells": ["C8"], "left_hand": ["C8"], "right_hand": []},
+    }
+    # Balanced: both players have comparable bell weights.
+    balanced = {
+        "P1": {"bells": ["C4"], "left_hand": ["C4"], "right_hand": []},
+        "P2": {"bells": ["E4"], "left_hand": ["E4"], "right_hand": []},
+    }
+    unbalanced_music = {
+        "unique_notes": [43, 108],
+        "notes": [
+            {"pitch": 43,  "time": 0,   "duration": 480},
+            {"pitch": 108, "time": 480, "duration": 480},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    balanced_music = {
+        "unique_notes": [60, 64],
+        "notes": [
+            {"pitch": 60, "time": 0,   "duration": 480},
+            {"pitch": 64, "time": 480, "duration": 480},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+
+    unbalanced_breakdown = ArrangementValidator.calculate_quality_breakdown(unbalanced, unbalanced_music)
+    balanced_breakdown   = ArrangementValidator.calculate_quality_breakdown(balanced,   balanced_music)
+
+    unbalanced_fatigue = unbalanced_breakdown["components"]["fatigue_fairness"]["earned"]
+    balanced_fatigue   = balanced_breakdown["components"]["fatigue_fairness"]["earned"]
+
+    # Unbalanced workload should score lower on fatigue fairness.
+    assert unbalanced_fatigue < balanced_fatigue
+    # And it should not receive the full 20 points.
+    assert unbalanced_fatigue < unbalanced_breakdown["components"]["fatigue_fairness"]["max"]
+
+
 def test_assign_bells_adds_virtual_player_when_gap_blocks_both_hands():
     """If extra bell is infeasible on both hands, algorithm should add a virtual player."""
     players = [{"name": "Player 1", "experience": "experienced"}]
