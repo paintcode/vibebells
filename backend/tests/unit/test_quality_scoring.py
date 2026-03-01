@@ -176,6 +176,36 @@ def test_quality_breakdown_hard_fail_reasons_present():
     assert breakdown["final_score"] == 0
 
 
+def test_pressure_events_count_tight_swaps_between_thresholds():
+    """Gaps between IMPOSSIBLE_SWAP_GAP_MS (500ms) and pressure_gap_ms (1000ms)
+    should NOT cause a hard-fail but SHOULD count as pressure events and apply a penalty."""
+    arrangement = {
+        "Player 1": {
+            "bells": ["C4", "E4"],
+            "left_hand": ["C4", "E4"],  # both on left hand forces a same-hand swap
+            "right_hand": [],
+        }
+    }
+    # At 120 BPM, 480 ticks/beat:
+    # C4 ends at tick 480 (500ms), E4 starts at tick 1200 (1250ms) → gap = 750ms
+    # 750ms > 500ms (Config.IMPOSSIBLE_SWAP_GAP_MS): no hard-fail
+    # 750ms < 1000ms (pressure_gap_ms):              counts as a pressure event
+    music_data = {
+        "unique_notes": [60, 64],
+        "notes": [
+            {"pitch": 60, "time": 0, "duration": 480},
+            {"pitch": 64, "time": 1200, "duration": 240},
+        ],
+        "format": "midi",
+        "tempo": 120,
+        "ticks_per_beat": 480,
+    }
+    breakdown = ArrangementValidator.calculate_quality_breakdown(arrangement, music_data)
+    assert breakdown["hard_fail"] is False
+    assert breakdown["penalties"]["hand_load_pressure_events"] == 1
+    assert breakdown["penalties"]["hand_pressure_penalty"] > 0
+
+
 def test_pressure_events_ignore_same_bell_repeats():
     """Fast repeats of the same bell on one hand should not count as pressure events."""
     arrangement = {

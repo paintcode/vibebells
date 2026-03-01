@@ -10,13 +10,18 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
   const [exporting, setExporting] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
 
+  const arrangementCount = arrangements?.length ?? 0;
+
   useEffect(() => {
-    if (selectedArrangement >= arrangements.length) {
+    if (arrangementCount === 0) {
+      return;
+    }
+    if (selectedArrangement >= arrangementCount) {
       setSelectedArrangement(0);
     }
-  }, [arrangements.length, selectedArrangement]);
+  }, [arrangementCount, selectedArrangement]);
 
-  if (!arrangements || arrangements.length === 0) {
+  if (arrangementCount === 0) {
     return <p>No arrangements generated</p>;
   }
 
