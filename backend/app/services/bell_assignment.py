@@ -287,6 +287,16 @@ class BellAssignmentAlgorithm:
     def _build_pair_costs(notes, note_timings, timing_config):
         """Build pair cost list sorted by lowest swap transitions then largest avg gap."""
         from app.services.swap_cost_calculator import SwapCostCalculator
+        # Pre-index events by pitch once (O(N_events)) so each pair lookup is
+        # O(|events_a| + |events_b|) instead of O(N_events).
+        pitch_index = {}
+        for n in (note_timings or []):
+            p = n.get('pitch')
+            if p is None:
+                continue
+            start = n.get('time', n.get('offset', 0))  # 'time' for MIDI, 'offset' for MusicXML
+            dur = n.get('duration', 0)
+            pitch_index.setdefault(p, []).append((start, start + dur, p))
         costs = []
         for i in range(len(notes)):
             for j in range(i + 1, len(notes)):
@@ -297,7 +307,7 @@ class BellAssignmentAlgorithm:
                     pb = MusicParser.note_name_to_pitch(b)
                 except (ValueError, KeyError):
                     continue
-                pair = SwapCostCalculator.calculate_pair_swap_cost(pa, pb, note_timings or [])
+                pair = SwapCostCalculator.calculate_pair_swap_cost_indexed(pa, pb, pitch_index)
                 costs.append({
                     'pair': (a, b),
                     'transitions': pair['transitions'],

@@ -154,6 +154,45 @@ class SwapCostCalculator:
         if not gaps:
             return {'transitions': transitions, 'avg_gap': float('inf'), 'gaps': []}
         return {'transitions': transitions, 'avg_gap': sum(gaps) / len(gaps), 'gaps': gaps}
+
+    @staticmethod
+    def calculate_pair_swap_cost_indexed(bell_a_pitch, bell_b_pitch, pitch_index):
+        """
+        Calculate swap-cost metrics for a bell pair using a pre-built pitch index.
+
+        This is equivalent to ``calculate_pair_swap_cost`` but avoids rescanning
+        the full note list for every pair call.  The caller builds the index once
+        (O(N_events)) and each pair lookup is then O(|events_a| + |events_b|).
+
+        Args:
+            bell_a_pitch: First bell MIDI pitch
+            bell_b_pitch: Second bell MIDI pitch
+            pitch_index: Dict mapping pitch -> list of (start, end, pitch) tuples
+
+        Returns:
+            Dict with:
+            - transitions: number of A<->B transitions in timeline
+            - avg_gap: average gap between transition pairs (start(next)-end(prev))
+            - gaps: list of raw transition gaps
+        """
+        pair_events = pitch_index.get(bell_a_pitch, []) + pitch_index.get(bell_b_pitch, [])
+
+        if len(pair_events) < 2:
+            return {'transitions': 0, 'avg_gap': float('inf'), 'gaps': []}
+
+        pair_events.sort(key=lambda e: e[0])
+        transitions = 0
+        gaps = []
+        for i in range(1, len(pair_events)):
+            prev = pair_events[i - 1]
+            curr = pair_events[i]
+            if prev[2] != curr[2]:
+                transitions += 1
+                gaps.append(curr[0] - prev[1])
+
+        if not gaps:
+            return {'transitions': transitions, 'avg_gap': float('inf'), 'gaps': []}
+        return {'transitions': transitions, 'avg_gap': sum(gaps) / len(gaps), 'gaps': gaps}
     
     @staticmethod
     def score_bell_for_player(
