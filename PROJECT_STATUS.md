@@ -1,12 +1,20 @@
 # Project Status: Production Ready ✅
 
-## Current Status: Vibebells 1.1.0
+## Current Status: Vibebells 1.2.0
 
 Vibebells is a complete, production-ready handbell arrangement generator available as both a desktop application and web application. The system generates optimized arrangements from MIDI and MusicXML files with experience-based player configuration, quality scoring, and CSV export capabilities.
 
 ## Recent Milestones
 
 ## Version History
+
+### v1.2.0 (March 1, 2026)
+**Feature update**
+- Two new bell assignment strategies: participation-balanced snake and fatigue-balanced snake
+- Improved min_transitions bell assignment strategy
+- Improved virtual player expansion notifications
+- UI improvements: arrangement buttons above strategy details, scoring layout, button placement
+- Bug fixes: swap scoring penalty for same-note events, strategy output diversity
 
 ### v1.1.0 (February 22, 2026)
 **Feature update**
@@ -264,7 +272,7 @@ UI Tests (11)
 - **License**: MIT License
 - **Copyright**: © 2026 Marie Danenhower
 - **Repository**: https://github.com/paintcode/vibebells
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 
 ---
 
