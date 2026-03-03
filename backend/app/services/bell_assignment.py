@@ -561,6 +561,8 @@ class BellAssignmentAlgorithm:
                 pname = player['name']
                 exp = player.get('experience', 'beginner')
                 max_for_exp = max_bells_per_player.get(exp, 2)
+                if max_for_exp <= 2:
+                    continue
                 if counts[pname] + 2 > max_for_exp:
                     continue
                 chosen_idx = None

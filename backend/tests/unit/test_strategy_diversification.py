@@ -62,6 +62,44 @@ def test_min_transitions_assigns_same_hand_pairs_to_experienced_first():
     assert exp_players_with_same_hand_pair >= 1
 
 
+def test_min_transitions_does_not_assign_same_hand_pair_to_beginner():
+    """Beginners (capacity=2) must never receive a same-hand pair in min_transitions.
+
+    Uses 5 notes with 2 players so extra_bells_needed = max(0, 5 - 2*2) = 1,
+    which forces selected_pairs to be non-empty and exercises the guard at line 564.
+    """
+    players = [
+        {'name': 'Exp 1', 'experience': 'experienced'},
+        {'name': 'Beg 1', 'experience': 'beginner'},
+    ]
+    # 5 notes > 2 * 2 players, so extra_bells_needed=1 and selected_pairs is non-empty.
+    notes = ['C4', 'D4', 'E4', 'F4', 'G4']
+    # C4/D4 alternate rapidly → high co-occurrence → chosen as the pair.
+    note_timings = [
+        {'pitch': 60, 'time': 0,    'duration': 100},
+        {'pitch': 62, 'time': 220,  'duration': 100},
+        {'pitch': 60, 'time': 440,  'duration': 100},
+        {'pitch': 62, 'time': 660,  'duration': 100},
+        {'pitch': 64, 'time': 3000, 'duration': 100},
+        {'pitch': 65, 'time': 3500, 'duration': 100},
+        {'pitch': 67, 'time': 4000, 'duration': 100},
+    ]
+
+    assignment = BellAssignmentAlgorithm.assign_bells(
+        notes,
+        players,
+        strategy='min_transitions',
+        config=_base_config(),
+        note_timings=note_timings,
+    )
+
+    beg_data = assignment.get('Beg 1', {})
+    left = beg_data.get('left_hand', [])
+    right = beg_data.get('right_hand', [])
+    assert len(left) <= 1, f"Beginner should not have >1 bell on left hand, got {left}"
+    assert len(right) <= 1, f"Beginner should not have >1 bell on right hand, got {right}"
+
+
 def test_snake_strategies_produce_different_assignments():
     """fatigue_snake and activity_snake should diverge when weight and active-time rankings differ."""
     players = [
