@@ -60,7 +60,6 @@ class ArrangementGenerator:
         
         # Generate multiple arrangements with different strategies
         expanded_player_names = {p['name'] for p in expanded_players}
-        max_actual_player_count = len(expanded_players)
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
@@ -116,12 +115,11 @@ class ArrangementGenerator:
 
                 # Detect virtual players added by bell_assignment.py swap-gap fallback
                 extra_vp = [name for name in assignment if name not in expanded_player_names]
+                arrangement_player_count = len(expanded_players) + len(extra_vp)
                 if extra_vp:
                     players_expanded = True
-                    actual_count = len(expanded_players) + len(extra_vp)
-                    max_actual_player_count = max(max_actual_player_count, actual_count)
-                    if minimum_required_players is None or actual_count > minimum_required_players:
-                        minimum_required_players = actual_count
+                    if minimum_required_players is None or arrangement_player_count > minimum_required_players:
+                        minimum_required_players = arrangement_player_count
 
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
@@ -150,7 +148,7 @@ class ArrangementGenerator:
                     'quality_breakdown': quality_breakdown,
                     'note_count': len(unique_notes),
                     'melody_count': len(melody_notes),
-                    'players': len(expanded_players)
+                    'players': arrangement_player_count
                 })
                 
                 logger.info(f"✓ Generated {strategy} arrangement (score: {quality_score:.0f})")
@@ -171,7 +169,7 @@ class ArrangementGenerator:
             'expanded': players_expanded,
             'minimum_players': minimum_required_players,
             'original_player_count': len(players),
-            'final_player_count': max_actual_player_count
+            'final_player_count': arrangements[0]['players']
         }
     
     @staticmethod
