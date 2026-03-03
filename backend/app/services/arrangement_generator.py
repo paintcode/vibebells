@@ -60,7 +60,6 @@ class ArrangementGenerator:
         
         # Generate multiple arrangements with different strategies
         expanded_player_names = {p['name'] for p in expanded_players}
-        max_actual_player_count = len(expanded_players)
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
@@ -119,7 +118,6 @@ class ArrangementGenerator:
                 arrangement_player_count = len(expanded_players) + len(extra_vp)
                 if extra_vp:
                     players_expanded = True
-                    max_actual_player_count = max(max_actual_player_count, arrangement_player_count)
                     if minimum_required_players is None or arrangement_player_count > minimum_required_players:
                         minimum_required_players = arrangement_player_count
 

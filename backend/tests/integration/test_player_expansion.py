@@ -155,6 +155,72 @@ def test_expansion_notification():
         print(f"\n✓ Expansion notification is informative")
 
 
+def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
+    """Each arrangement's players field must include swap-gap fallback virtual players
+    and final_player_count must match the best arrangement's players field.
+
+    Patches assign_bells to return an assignment with one extra virtual player key
+    beyond expanded_players, simulating the swap-gap fallback in bell_assignment.py.
+    Verifies that:
+    - arrangement['players'] == len(actual_assignment_keys) for each arrangement
+    - result['final_player_count'] == result['arrangements'][0]['players']
+    """
+    from unittest.mock import patch
+    from app import create_app
+
+    app = create_app()
+    players = [
+        {'name': 'Expert', 'experience': 'experienced'},
+        {'name': 'Beginner', 'experience': 'beginner'},
+    ]
+    music_data = {
+        'unique_notes': [60, 62, 64],   # C4, D4, E4
+        'melody_pitches': [60],
+        'notes': [
+            {'pitch': 60, 'time': 0,    'duration': 480},
+            {'pitch': 62, 'time': 960,  'duration': 480},
+            {'pitch': 64, 'time': 1920, 'duration': 480},
+        ],
+        'note_count': 3,
+        'format': 'midi',
+        'tempo': 120,
+        'ticks_per_beat': 480,
+    }
+    # Assignment returned by the patched assign_bells.
+    # 'Virtual Player 3' is an extra key not present in expanded_players (Expert, Beginner),
+    # simulating the swap-gap fallback in bell_assignment.py.
+    patched_assignment = {
+        'Expert':           {'bells': ['C4'], 'left_hand': ['C4'], 'right_hand': []},
+        'Beginner':         {'bells': ['D4'], 'left_hand': ['D4'], 'right_hand': []},
+        'Virtual Player 3': {'bells': ['E4'], 'left_hand': ['E4'], 'right_hand': []},
+    }
+    expected_player_count = len(patched_assignment)  # 3
+
+    with app.app_context():
+        with patch(
+            'app.services.arrangement_generator.BellAssignmentAlgorithm.assign_bells',
+            return_value=patched_assignment,
+        ):
+            gen = ArrangementGenerator()
+            result = gen.generate(music_data, players)
+
+    arrangements = result['arrangements']
+    assert len(arrangements) > 0
+
+    # Each arrangement should report players == actual assignment key count (including VP)
+    for arr in arrangements:
+        assert arr['players'] == expected_player_count, (
+            f"Strategy {arr['strategy']}: expected players={expected_player_count}, "
+            f"got {arr['players']}"
+        )
+
+    # final_player_count must match the best arrangement's players field
+    assert result['final_player_count'] == arrangements[0]['players'], (
+        f"final_player_count={result['final_player_count']} != "
+        f"arrangements[0]['players']={arrangements[0]['players']}"
+    )
+
+
 if __name__ == '__main__':
     try:
         test_insufficient_players_expansion()
