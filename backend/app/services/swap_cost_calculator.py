@@ -154,6 +154,58 @@ class SwapCostCalculator:
         if not gaps:
             return {'transitions': transitions, 'avg_gap': float('inf'), 'gaps': []}
         return {'transitions': transitions, 'avg_gap': sum(gaps) / len(gaps), 'gaps': gaps}
+
+    @staticmethod
+    def calculate_pair_swap_cost_indexed(bell_a_pitch, bell_b_pitch, pitch_index):
+        """
+        Calculate swap-cost metrics for a bell pair using a pre-built pitch index.
+
+        This is equivalent to ``calculate_pair_swap_cost`` but avoids rescanning
+        the full note list for every pair call.  The caller builds the index once
+        (O(N_events + N_pitches * k*log(k))) and each pair lookup is then
+        O(|events_a| + |events_b|) via a linear merge of two pre-sorted lists.
+
+        Pre-condition: each list in pitch_index must already be sorted by start
+        time in ascending order.  ``_build_pair_costs`` sorts the lists once after
+        constructing the index.
+
+        Args:
+            bell_a_pitch: First bell MIDI pitch
+            bell_b_pitch: Second bell MIDI pitch
+            pitch_index: Dict mapping pitch -> sorted list of (start, end, pitch) tuples
+
+        Returns:
+            Dict with:
+            - transitions: number of A<->B transitions in timeline
+            - avg_gap: average gap between transition pairs (start(next)-end(prev))
+            - gaps: list of raw transition gaps
+        """
+        events_a = pitch_index.get(bell_a_pitch, [])
+        events_b = pitch_index.get(bell_b_pitch, [])
+
+        if len(events_a) + len(events_b) < 2:
+            return {'transitions': 0, 'avg_gap': float('inf'), 'gaps': []}
+
+        # Linear merge of two pre-sorted lists — O(|events_a| + |events_b|).
+        transitions = 0
+        gaps = []
+        prev = None
+        i = j = 0
+        while i < len(events_a) or j < len(events_b):
+            if i < len(events_a) and (j >= len(events_b) or events_a[i][0] <= events_b[j][0]):
+                curr = events_a[i]
+                i += 1
+            else:
+                curr = events_b[j]
+                j += 1
+            if prev is not None and prev[2] != curr[2]:
+                transitions += 1
+                gaps.append(curr[0] - prev[1])
+            prev = curr
+
+        if not gaps:
+            return {'transitions': transitions, 'avg_gap': float('inf'), 'gaps': []}
+        return {'transitions': transitions, 'avg_gap': sum(gaps) / len(gaps), 'gaps': gaps}
     
     @staticmethod
     def score_bell_for_player(
