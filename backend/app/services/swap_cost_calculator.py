@@ -162,12 +162,17 @@ class SwapCostCalculator:
 
         This is equivalent to ``calculate_pair_swap_cost`` but avoids rescanning
         the full note list for every pair call.  The caller builds the index once
-        (O(N_events)) and each pair lookup is then O(|events_a| + |events_b|).
+        (O(N_events + N_pitches * k*log(k))) and each pair lookup is then
+        O(|events_a| + |events_b|) via a linear merge of two pre-sorted lists.
+
+        Pre-condition: each list in pitch_index must already be sorted by start
+        time in ascending order.  ``_build_pair_costs`` sorts the lists once after
+        constructing the index.
 
         Args:
             bell_a_pitch: First bell MIDI pitch
             bell_b_pitch: Second bell MIDI pitch
-            pitch_index: Dict mapping pitch -> list of (start, end, pitch) tuples
+            pitch_index: Dict mapping pitch -> sorted list of (start, end, pitch) tuples
 
         Returns:
             Dict with:
@@ -175,20 +180,28 @@ class SwapCostCalculator:
             - avg_gap: average gap between transition pairs (start(next)-end(prev))
             - gaps: list of raw transition gaps
         """
-        pair_events = pitch_index.get(bell_a_pitch, []) + pitch_index.get(bell_b_pitch, [])
+        events_a = pitch_index.get(bell_a_pitch, [])
+        events_b = pitch_index.get(bell_b_pitch, [])
 
-        if len(pair_events) < 2:
+        if len(events_a) + len(events_b) < 2:
             return {'transitions': 0, 'avg_gap': float('inf'), 'gaps': []}
 
-        pair_events.sort(key=lambda e: e[0])
+        # Linear merge of two pre-sorted lists — O(|events_a| + |events_b|).
         transitions = 0
         gaps = []
-        for i in range(1, len(pair_events)):
-            prev = pair_events[i - 1]
-            curr = pair_events[i]
-            if prev[2] != curr[2]:
+        prev = None
+        i = j = 0
+        while i < len(events_a) or j < len(events_b):
+            if i < len(events_a) and (j >= len(events_b) or events_a[i][0] <= events_b[j][0]):
+                curr = events_a[i]
+                i += 1
+            else:
+                curr = events_b[j]
+                j += 1
+            if prev is not None and prev[2] != curr[2]:
                 transitions += 1
                 gaps.append(curr[0] - prev[1])
+            prev = curr
 
         if not gaps:
             return {'transitions': transitions, 'avg_gap': float('inf'), 'gaps': []}

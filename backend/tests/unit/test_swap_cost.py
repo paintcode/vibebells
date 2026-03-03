@@ -186,21 +186,28 @@ def test_calculate_pair_swap_cost():
 
 def test_calculate_pair_swap_cost_indexed():
     """Test indexed pair swap-cost matches the non-indexed version."""
+    # Mix of 'time'-style (MIDI) and 'offset'-style (MusicXML) notes, and one
+    # note with pitch=None that must be skipped — mirroring _build_pair_costs.
     notes = [
         {'pitch': 60, 'time': 0, 'duration': 100},
         {'pitch': 62, 'time': 200, 'duration': 100},
-        {'pitch': 60, 'time': 400, 'duration': 100},
+        {'pitch': 60, 'offset': 400, 'duration': 100},   # MusicXML-style offset
         {'pitch': 62, 'time': 600, 'duration': 100},
         {'pitch': 64, 'time': 800, 'duration': 100},
+        {'pitch': None, 'time': 50, 'duration': 10},     # must be skipped
     ]
 
-    # Build the same index that _build_pair_costs would create.
+    # Build the index the same way _build_pair_costs does.
     pitch_index = {}
     for n in notes:
         p = n.get('pitch')
-        start = n.get('time', 0)
+        if p is None:
+            continue
+        start = n.get('time', n.get('offset', 0))
         dur = n.get('duration', 0)
         pitch_index.setdefault(p, []).append((start, start + dur, p))
+    for events in pitch_index.values():
+        events.sort(key=lambda e: e[0])
 
     result = SwapCostCalculator.calculate_pair_swap_cost_indexed(60, 62, pitch_index)
     assert result['transitions'] == 3, f"Expected 3 transitions, got {result['transitions']}"
