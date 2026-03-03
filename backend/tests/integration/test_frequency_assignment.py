@@ -52,7 +52,7 @@ def test_frequency_based_assignment():
     print(f"  Players: {[p['name'] + ' (' + p['experience'] + ')' for p in players]}")
     
     # Test each strategy
-    strategies = ['experienced_first', 'balanced', 'min_transitions']
+    strategies = ['experienced_first', 'balanced', 'min_transitions', 'fatigue_snake', 'activity_snake']
     
     for strategy in strategies:
         print(f"\n{strategy.upper()} Strategy:")

@@ -261,7 +261,7 @@ def test_all_strategies_respect_constraints():
     
     notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5']
     
-    strategies = ['experienced_first', 'balanced', 'min_transitions']
+    strategies = ['experienced_first', 'balanced', 'min_transitions', 'fatigue_snake', 'activity_snake']
     
     for strategy in strategies:
         assignment = BellAssignmentAlgorithm.assign_bells(

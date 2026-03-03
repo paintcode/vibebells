@@ -59,11 +59,14 @@ class ArrangementGenerator:
             logger.info(f"Expanded to {len(expanded_players)} total players (added {len(expanded_players) - len(players)} virtual players)")
         
         # Generate multiple arrangements with different strategies
+        expanded_player_names = {p['name'] for p in expanded_players}
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
             ('balanced', 'Evenly distribute melody notes'),
-            ('min_transitions', 'Minimize player transitions'),
+            ('min_transitions', 'Minimize player transitions (pair-first)'),
+            ('fatigue_snake', 'Balance weighted fatigue with snake distribution'),
+            ('activity_snake', 'Balance active play time with snake distribution'),
         ]
         
         for strategy, description in strategies:
@@ -109,7 +112,15 @@ class ArrangementGenerator:
                 assignment = ConflictResolver.resolve_duplicates(assignment)
                 assignment = ConflictResolver.balance_assignments(assignment)
                 assignment = ConflictResolver.optimize_for_experience(assignment, expanded_players)
-                
+
+                # Detect virtual players added by bell_assignment.py swap-gap fallback
+                extra_vp = [name for name in assignment if name not in expanded_player_names]
+                arrangement_player_count = len(expanded_players) + len(extra_vp)
+                if extra_vp:
+                    players_expanded = True
+                    if minimum_required_players is None or arrangement_player_count > minimum_required_players:
+                        minimum_required_players = arrangement_player_count
+
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
                 sustainability = ArrangementValidator.sustainability_check(assignment, music_data)
@@ -137,7 +148,7 @@ class ArrangementGenerator:
                     'quality_breakdown': quality_breakdown,
                     'note_count': len(unique_notes),
                     'melody_count': len(melody_notes),
-                    'players': len(expanded_players)
+                    'players': arrangement_player_count
                 })
                 
                 logger.info(f"✓ Generated {strategy} arrangement (score: {quality_score:.0f})")
@@ -158,7 +169,7 @@ class ArrangementGenerator:
             'expanded': players_expanded,
             'minimum_players': minimum_required_players,
             'original_player_count': len(players),
-            'final_player_count': len(expanded_players)
+            'final_player_count': arrangements[0]['players']
         }
     
     @staticmethod

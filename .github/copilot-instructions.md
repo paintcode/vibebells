@@ -140,16 +140,19 @@ Each service is designed to be testable in isolation with well-defined inputs/ou
 
 ### Backend Test Organization
 Tests are organized following Python best practices in `backend/tests/`:
-- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes (77 tests)
+- **Unit tests** (`tests/unit/`): Fast, isolated tests for individual functions/classes (108 tests)
   - `test_file_handler.py` - FileHandler (15 tests)
   - `test_midi_parser.py` - MIDIParser (12 tests)
   - `test_musicxml_parser.py` - MusicXMLParser (14 tests)
   - `test_services.py` - SwapCounter, ExportFormatter (24 tests)
-  - `test_swap_cost.py` - SwapCostCalculator (7 tests)
+  - `test_swap_cost.py` - SwapCostCalculator (8 tests)
   - `test_experience_constraints.py` - Experience constraints (5 tests)
+  - `test_quality_scoring.py` - ArrangementValidator scoring (10 tests)
+  - `test_simulation_builder.py` - SimulationBuilder (15 tests)
+  - `test_strategy_diversification.py` - Strategy diversification (2 tests)
+  - `test_strategy_completeness.py` - Strategy completeness & regressions (3 tests)
 - **Integration tests** (`tests/integration/`): End-to-end workflow tests (15 tests)
   - `test_comprehensive_algorithm.py`, `test_complete_system.py`, etc.
-- **Manual tests** (`manual_tests/`): Deprecated scripts replaced by automated tests
 
 Run with: `cd backend; python -m pytest tests/` (requires venv activation or use `python -m pytest`)
 
