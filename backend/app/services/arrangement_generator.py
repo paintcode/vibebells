@@ -257,11 +257,12 @@ class ArrangementGenerator:
 
     @staticmethod
     def _trim_players(assignment, original_players):
-        """Remove players with 0 bells; keep at most 1 player with fewer than 2 bells.
+        """Remove players with 0 bells; keep at most 1 player with fewer than 2 bells,
+        merging any extra sparse-player bells into the kept sparse player.
 
         Players with 0 bells are always removed. If multiple players have exactly 1 bell,
-        only one is kept (preferring original/non-virtual players). This ensures the
-        displayed arrangement contains only players who contribute meaningfully.
+        all their bells are merged into a single kept player (preferring original/non-virtual
+        players) so that no bells are dropped.
 
         Args:
             assignment: Dict mapping player name -> {'bells': [...], ...}
@@ -275,7 +276,7 @@ class ArrangementGenerator:
         original_names = {p['name'] for p in original_players if not p.get('virtual')}
 
         adequate = {}   # >= 2 bells — always kept
-        sparse = {}     # exactly 1 bell — at most one is kept
+        sparse = {}     # exactly 1 bell — at most one is kept (others' bells are merged in)
 
         for name, data in assignment.items():
             count = len(data.get('bells', []))
@@ -285,11 +286,26 @@ class ArrangementGenerator:
                 sparse[name] = data
             # 0 bells: dropped silently
 
-        # Among sparse players, prefer original (non-virtual) players
         trimmed = dict(adequate)
-        sorted_sparse = sorted(sparse.keys(), key=lambda n: (n not in original_names))
-        if sorted_sparse:
-            trimmed[sorted_sparse[0]] = sparse[sorted_sparse[0]]
+
+        if sparse:
+            # Among sparse players, prefer original (non-virtual) players as the recipient
+            sorted_sparse = sorted(sparse.keys(), key=lambda n: (n not in original_names))
+            keeper_name = sorted_sparse[0]
+
+            # Merge all sparse bells into the keeper so no bells are lost.
+            # Bells are already unique per-player after ConflictResolver.resolve_duplicates,
+            # so no deduplication is required here.
+            merged_bells = []
+            for name in sorted_sparse:
+                merged_bells.extend(sparse[name].get('bells', []))
+
+            trimmed[keeper_name] = {
+                **sparse[keeper_name],
+                'bells': merged_bells,
+                'left_hand': merged_bells[::2],
+                'right_hand': merged_bells[1::2],
+            }
 
         removed = set(assignment.keys()) - set(trimmed.keys())
         trimmed_original_count = len(removed & original_names)

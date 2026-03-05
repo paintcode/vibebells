@@ -136,3 +136,58 @@ def test_trim_all_zero_bells():
 
     assert trimmed == {}
     assert count == 2
+
+
+def test_trim_reassigns_bell_from_removed_sparse_player():
+    """Bells from removed 1-bell players should be merged into the kept sparse player."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Player 3': ['F4'],
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Player 3'),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    # All bells must be preserved — none should be dropped
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    # The kept sparse player should now hold both spare bells
+    sparse_remaining = [n for n in ['Player 2', 'Player 3'] if n in trimmed]
+    assert len(sparse_remaining) == 1
+    keeper = sparse_remaining[0]
+    assert len(trimmed[keeper]['bells']) == 2
+    assert count == 1  # one original player was removed (not dropped — its bell was merged)
+
+
+def test_trim_reassigns_virtual_sparse_bell_to_original_keeper():
+    """Bell from a removed virtual sparse player should be merged into the original keeper."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Virtual Player 10': ['F4'],
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Virtual Player 10', virtual=True),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    # All bells must be preserved
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    # Player 2 (original) is the keeper and should now hold both sparse bells
+    assert 'Player 2' in trimmed
+    assert 'Virtual Player 10' not in trimmed
+    assert len(trimmed['Player 2']['bells']) == 2
+    assert count == 0  # no original players were removed
