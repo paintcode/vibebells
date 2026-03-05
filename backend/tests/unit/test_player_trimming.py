@@ -1,0 +1,138 @@
+"""Unit tests for ArrangementGenerator._trim_players."""
+
+from app.services.arrangement_generator import ArrangementGenerator
+
+
+def _make_player(name, experience='intermediate', virtual=False):
+    p = {'name': name, 'experience': experience}
+    if virtual:
+        p['virtual'] = True
+    return p
+
+
+def _make_assignment(player_bells):
+    """Build an assignment dict from {name: [bells]} mapping."""
+    result = {}
+    for name, bells in player_bells.items():
+        left = bells[::2]
+        right = bells[1::2]
+        result[name] = {'bells': list(bells), 'left_hand': left, 'right_hand': right}
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+def test_trim_removes_players_with_zero_bells():
+    """Players with 0 bells should be removed from the assignment."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': [],
+    })
+    original_players = [_make_player('Player 1'), _make_player('Player 2')]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+    assert 'Player 2' not in trimmed
+    assert count == 1  # one original player was removed
+
+
+def test_trim_keeps_at_most_one_sparse_player():
+    """At most 1 player with fewer than 2 bells should be kept."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Player 3': ['F4'],
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Player 3'),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+    # Exactly one of the two sparse players remains
+    sparse_remaining = sum(1 for n in ['Player 2', 'Player 3'] if n in trimmed)
+    assert sparse_remaining == 1
+    assert count == 1  # one original player removed
+
+
+def test_trim_prefers_original_over_virtual_when_sparse():
+    """When one sparse slot is kept, prefer an original player over a virtual one."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],             # original with 1 bell
+        'Virtual Player 10': ['F4'],    # virtual with 1 bell
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Virtual Player 10', virtual=True),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+    assert 'Player 2' in trimmed        # original sparse player kept
+    assert 'Virtual Player 10' not in trimmed  # virtual sparse player removed
+    assert count == 0  # no original players were removed (only virtual)
+
+
+def test_trim_counts_only_original_removed():
+    """trimmed_original_count should not count virtual players."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Virtual Player 2': [],  # virtual, 0 bells
+        'Player 3': [],          # original, 0 bells
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Virtual Player 2', virtual=True),
+        _make_player('Player 3'),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+    assert 'Virtual Player 2' not in trimmed
+    assert 'Player 3' not in trimmed
+    assert count == 1  # only the original 0-bell player counts
+
+
+def test_trim_no_changes_when_all_players_adequate():
+    """If all players have >= 2 bells, nothing should be trimmed."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4', 'F4', 'G4'],
+    })
+    original_players = [_make_player('Player 1'), _make_player('Player 2')]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert set(trimmed.keys()) == {'Player 1', 'Player 2'}
+    assert count == 0
+
+
+def test_trim_empty_assignment():
+    """An empty assignment should return empty with zero trimmed count."""
+    trimmed, count = ArrangementGenerator._trim_players({}, [])
+    assert trimmed == {}
+    assert count == 0
+
+
+def test_trim_all_zero_bells():
+    """If all players have 0 bells, all should be removed."""
+    assignment = _make_assignment({
+        'Player 1': [],
+        'Player 2': [],
+    })
+    original_players = [_make_player('Player 1'), _make_player('Player 2')]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert trimmed == {}
+    assert count == 2

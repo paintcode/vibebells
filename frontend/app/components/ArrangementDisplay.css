@@ -401,6 +401,32 @@
   color: #333;
 }
 
+.trimming-notification {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #e3f2fd;
+  border-left: 4px solid #1976d2;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.trimming-icon {
+  font-size: 1.25rem;
+  color: #1976d2;
+  min-width: 1.5rem;
+}
+
+.trimming-content {
+  flex: 1;
+}
+
+.trimming-content p {
+  margin: 0;
+  color: #0d47a1;
+  font-size: 0.95rem;
+}
+
 
 
 .simulation-unavailable {

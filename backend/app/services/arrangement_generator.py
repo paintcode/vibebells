@@ -115,11 +115,15 @@ class ArrangementGenerator:
 
                 # Detect virtual players added by bell_assignment.py swap-gap fallback
                 extra_vp = [name for name in assignment if name not in expanded_player_names]
-                arrangement_player_count = len(expanded_players) + len(extra_vp)
                 if extra_vp:
                     players_expanded = True
+                    arrangement_player_count = len(expanded_players) + len(extra_vp)
                     if minimum_required_players is None or arrangement_player_count > minimum_required_players:
                         minimum_required_players = arrangement_player_count
+
+                # Trim players with 0 bells and cap players with fewer than 2 bells to at most 1
+                assignment, trimmed_original_count = self._trim_players(assignment, players)
+                arrangement_player_count = len(assignment)
 
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
@@ -148,7 +152,8 @@ class ArrangementGenerator:
                     'quality_breakdown': quality_breakdown,
                     'note_count': len(unique_notes),
                     'melody_count': len(melody_notes),
-                    'players': arrangement_player_count
+                    'players': arrangement_player_count,
+                    'trimmed_count': trimmed_original_count,
                 })
                 
                 logger.info(f"✓ Generated {strategy} arrangement (score: {quality_score:.0f})")
@@ -249,3 +254,49 @@ class ArrangementGenerator:
         logger.info(f"Expanded player list from {current_count} to {target_count} (added {target_count - current_count} virtual players)")
         
         return expanded
+
+    @staticmethod
+    def _trim_players(assignment, original_players):
+        """Remove players with 0 bells; keep at most 1 player with fewer than 2 bells.
+
+        Players with 0 bells are always removed. If multiple players have exactly 1 bell,
+        only one is kept (preferring original/non-virtual players). This ensures the
+        displayed arrangement contains only players who contribute meaningfully.
+
+        Args:
+            assignment: Dict mapping player name -> {'bells': [...], ...}
+            original_players: List of user-configured player dicts (may include virtual=True entries)
+
+        Returns:
+            tuple: (trimmed_assignment, trimmed_original_count)
+                trimmed_assignment: assignment dict with unneeded players removed
+                trimmed_original_count: number of original (non-virtual) configured players removed
+        """
+        original_names = {p['name'] for p in original_players if not p.get('virtual')}
+
+        adequate = {}   # >= 2 bells — always kept
+        sparse = {}     # exactly 1 bell — at most one is kept
+
+        for name, data in assignment.items():
+            count = len(data.get('bells', []))
+            if count >= 2:
+                adequate[name] = data
+            elif count == 1:
+                sparse[name] = data
+            # 0 bells: dropped silently
+
+        # Among sparse players, prefer original (non-virtual) players
+        trimmed = dict(adequate)
+        sorted_sparse = sorted(sparse.keys(), key=lambda n: (n not in original_names))
+        if sorted_sparse:
+            trimmed[sorted_sparse[0]] = sparse[sorted_sparse[0]]
+
+        removed = set(assignment.keys()) - set(trimmed.keys())
+        trimmed_original_count = len(removed & original_names)
+
+        if trimmed_original_count > 0:
+            logger.info(
+                f"Removed {trimmed_original_count} configured player(s) with 0 bells or excess 1-bell assignments"
+            )
+
+        return trimmed, trimmed_original_count

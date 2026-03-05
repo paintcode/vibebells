@@ -27,6 +27,7 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
 
   const current = arrangements[selectedArrangement] ?? arrangements[0];
   const scoreBreakdown = current?.quality_breakdown;
+  const trimmedCount = current?.trimmed_count ?? 0;
 
   const getScoreColor = (score) => {
     if (score >= 80) return '#4caf50';
@@ -115,6 +116,19 @@ export default function ArrangementDisplay({ arrangements, expansionInfo, upload
                 <li><strong>Minimum required:</strong> {expansionInfo.minimum_required}</li>
               </ul>
             </details>
+          </div>
+        </div>
+      )}
+
+      {trimmedCount > 0 && (
+        <div className="trimming-notification">
+          <div className="trimming-icon">ℹ</div>
+          <div className="trimming-content">
+            <p>
+              {trimmedCount === 1
+                ? '1 configured player was not needed for this song and has been removed from the arrangement.'
+                : `${trimmedCount} configured players were not needed for this song and have been removed from the arrangement.`}
+            </p>
           </div>
         </div>
       )}

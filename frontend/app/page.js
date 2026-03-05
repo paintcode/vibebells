@@ -141,7 +141,7 @@ export default function Home() {
       'ERR_INVALID_JSON': 'Invalid player configuration',
       'ERR_NO_PLAYERS': 'No players configured',
       'ERR_TOO_FEW_PLAYERS': 'At least one player is required',
-      'ERR_TOO_MANY_PLAYERS': 'Too many players (max 20)',
+      'ERR_TOO_MANY_PLAYERS': fallback || 'Too many players configured',
       'ERR_PLAYER_NO_NAME': 'All players must have names',
       'ERR_FILE_SAVE': 'Failed to save file',
       'ERR_MUSIC_PARSE': `Failed to parse music file: ${fallback}`,
