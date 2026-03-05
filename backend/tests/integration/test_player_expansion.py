@@ -155,6 +155,34 @@ def test_expansion_notification():
         print(f"\n✓ Expansion notification is informative")
 
 
+def test_virtual_player_numbering_starts_at_one():
+    """Virtual players added by _expand_players should be numbered starting at 1,
+    regardless of how many original (non-virtual) players already exist."""
+
+    # 8 original players – the bug caused virtual players to start at 9
+    original_players = [
+        {'name': f'Player {i}', 'experience': 'beginner'} for i in range(1, 9)
+    ]
+    # 8 beginners × 2 = 16 capacity; we need >16 notes to force expansion
+    notes = [f'Note{i}' for i in range(17)]
+
+    min_needed = ArrangementGenerator._calculate_minimum_players_needed(notes, original_players)
+    expanded = ArrangementGenerator._expand_players(original_players, min_needed)
+
+    virtual_players = [p for p in expanded if p.get('virtual')]
+    assert len(virtual_players) > 0, "Expansion should have added at least one virtual player"
+
+    virtual_names = [p['name'] for p in virtual_players]
+    assert 'Virtual Player 1' in virtual_names, (
+        f"First virtual player should be 'Virtual Player 1', got: {virtual_names}"
+    )
+    # Numbering must be consecutive starting at 1
+    for idx, name in enumerate(virtual_names, start=1):
+        assert name == f'Virtual Player {idx}', (
+            f"Expected 'Virtual Player {idx}' but got '{name}'"
+        )
+
+
 def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     """Each arrangement's players field must include swap-gap fallback virtual players
     and final_player_count must match the best arrangement's players field.
