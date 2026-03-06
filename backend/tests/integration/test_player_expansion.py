@@ -244,12 +244,17 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     # Assignment returned by the patched assign_bells.
     # 'Virtual Player 3' is an extra key not present in expanded_players (Expert, Beginner),
     # simulating the swap-gap fallback in bell_assignment.py.
+    # All three players have exactly 1 bell (sparse). Two-pointer pairing logic:
+    #   sorted order (originals first): Expert, Beginner, Virtual Player 3
+    #   two-pointer: Expert (left=0) ← Virtual Player 3 (right=2): Expert gets 2 bells, VP3 removed
+    #   middle remainder: Beginner (left=1 == right=1) unpaired, keeps 1 bell
+    # → 2 players remain after trimming.
     patched_assignment = {
         'Expert':           {'bells': ['C4'], 'left_hand': ['C4'], 'right_hand': []},
         'Beginner':         {'bells': ['D4'], 'left_hand': ['D4'], 'right_hand': []},
         'Virtual Player 3': {'bells': ['E4'], 'left_hand': ['E4'], 'right_hand': []},
     }
-    expected_player_count = len(patched_assignment)  # 3
+    expected_player_count = 2  # Expert (paired, 2 bells) + Beginner (unpaired, 1 bell)
 
     with app.app_context():
         with patch(
@@ -262,7 +267,7 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     arrangements = result['arrangements']
     assert len(arrangements) > 0
 
-    # Each arrangement should report players == actual assignment key count (including VP)
+    # Each arrangement should report players == actual post-trim assignment key count
     for arr in arrangements:
         assert arr['players'] == expected_player_count, (
             f"Strategy {arr['strategy']}: expected players={expected_player_count}, "
@@ -273,6 +278,15 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     assert result['final_player_count'] == arrangements[0]['players'], (
         f"final_player_count={result['final_player_count']} != "
         f"arrangements[0]['players']={arrangements[0]['players']}"
+    )
+
+    # VP3 was trimmed away: the post-trim assignment has exactly len(players)==2 players,
+    # so no expansion actually survived → expanded must be False and minimum_players None.
+    assert result['expanded'] is False, (
+        f"expected expanded=False (VP3 was trimmed), got {result['expanded']}"
+    )
+    assert result['minimum_players'] is None, (
+        f"expected minimum_players=None (VP3 was trimmed), got {result['minimum_players']}"
     )
 
 

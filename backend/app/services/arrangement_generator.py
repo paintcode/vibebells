@@ -59,7 +59,6 @@ class ArrangementGenerator:
             logger.info(f"Expanded to {len(expanded_players)} total players (added {len(expanded_players) - len(players)} virtual players)")
         
         # Generate multiple arrangements with different strategies
-        expanded_player_names = {p['name'] for p in expanded_players}
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
@@ -113,10 +112,14 @@ class ArrangementGenerator:
                 assignment = ConflictResolver.balance_assignments(assignment)
                 assignment = ConflictResolver.optimize_for_experience(assignment, expanded_players)
 
-                # Detect virtual players added by bell_assignment.py swap-gap fallback
-                extra_vp = [name for name in assignment if name not in expanded_player_names]
-                arrangement_player_count = len(expanded_players) + len(extra_vp)
-                if extra_vp:
+                # Trim players with 0 bells and cap players with fewer than 2 bells to at most 1
+                assignment, trimmed_original_count = self._trim_players(assignment, players)
+                arrangement_player_count = len(assignment)
+
+                # Recompute expansion signals based on the post-trim assignment size.
+                # This avoids incorrectly marking the result as expanded when swap-gap
+                # fallback virtual players were added but later trimmed away.
+                if arrangement_player_count > len(players):
                     players_expanded = True
                     if minimum_required_players is None or arrangement_player_count > minimum_required_players:
                         minimum_required_players = arrangement_player_count
@@ -148,7 +151,8 @@ class ArrangementGenerator:
                     'quality_breakdown': quality_breakdown,
                     'note_count': len(unique_notes),
                     'melody_count': len(melody_notes),
-                    'players': arrangement_player_count
+                    'players': arrangement_player_count,
+                    'trimmed_count': trimmed_original_count,
                 })
                 
                 logger.info(f"✓ Generated {strategy} arrangement (score: {quality_score:.0f})")
@@ -249,3 +253,85 @@ class ArrangementGenerator:
         logger.info(f"Expanded player list from {current_count} to {target_count} (added {target_count - current_count} virtual players)")
         
         return expanded
+
+    @staticmethod
+    def _trim_players(assignment, original_players):
+        """Remove players with 0 bells and pair up players with exactly 1 bell.
+
+        Players with 0 bells are always removed. Players with exactly 1 bell are
+        sorted so original (non-virtual) players appear first. Pairing uses two
+        pointers — the front player (original/recipient) absorbs the bell from the
+        back player (virtual/donor) — so virtual players are preferred donors and
+        original players are preferred recipients. Each recipient ends up with 2
+        bells; each donor is removed (0 bells). If the total number of single-bell
+        players is odd, the middle player is unpaired and keeps their 1 bell. No
+        bells are ever dropped.
+
+        Args:
+            assignment: Dict mapping player name -> {'bells': [...], ...}
+            original_players: List of user-configured player dicts (may include virtual=True entries)
+
+        Returns:
+            tuple: (trimmed_assignment, trimmed_original_count)
+                trimmed_assignment: assignment dict with unneeded players removed
+                trimmed_original_count: number of original (non-virtual) configured players removed
+        """
+        original_names = {p['name'] for p in original_players if not p.get('virtual')}
+
+        adequate = {}   # >= 2 bells — always kept
+        sparse = {}     # exactly 1 bell — paired up; any leftover keeps their 1 bell
+
+        for name, data in assignment.items():
+            count = len(data.get('bells', []))
+            if count >= 2:
+                adequate[name] = data
+            elif count == 1:
+                sparse[name] = data
+            # 0 bells: dropped silently
+
+        trimmed = dict(adequate)
+
+        if sparse:
+            # Sort sparse players: original (non-virtual) players are preferred recipients,
+            # so they appear at the front of the list; virtual players appear at the back.
+            sorted_sparse = sorted(sparse.keys(), key=lambda n: (n not in original_names))
+
+            # Pair using two pointers: the front player (original/recipient) absorbs the bell
+            # from the back player (virtual/donor). This ensures virtual players are preferred
+            # donors and are removed first, while original players are kept as recipients.
+            # Each recipient ends up with 2 bells; each donor is omitted → removed (0 bells).
+            # If the count is odd, the middle player is unpaired and keeps its 1 bell.
+            # Bells are already unique per-player after ConflictResolver.resolve_duplicates,
+            # so no deduplication is required here.
+            left = 0
+            right = len(sorted_sparse) - 1
+            while left < right:
+                recipient_name = sorted_sparse[left]
+                donor_name = sorted_sparse[right]
+                merged_bells = (
+                    list(sparse[recipient_name].get('bells', []))
+                    + list(sparse[donor_name].get('bells', []))
+                )
+                trimmed[recipient_name] = {
+                    **sparse[recipient_name],
+                    'bells': merged_bells,
+                    'left_hand': merged_bells[::2],
+                    'right_hand': merged_bells[1::2],
+                }
+                # donor is intentionally omitted from trimmed → removed with 0 bells
+                left += 1
+                right -= 1
+
+            # Odd number of sparse players: the middle one is unpaired and keeps its 1 bell
+            if left == right:
+                trimmed[sorted_sparse[left]] = sparse[sorted_sparse[left]]
+
+        removed = set(assignment.keys()) - set(trimmed.keys())
+        trimmed_original_count = len(removed & original_names)
+
+        if trimmed_original_count > 0:
+            logger.info(
+                f"Removed {trimmed_original_count} configured player(s) with 0 bells or excess 1-bell assignments"
+            )
+
+        return trimmed, trimmed_original_count

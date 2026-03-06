@@ -12,7 +12,7 @@ class Config:
     REQUEST_TIMEOUT = 30  # 30 second timeout
     ALLOWED_EXTENSIONS = {'mid', 'midi', 'musicxml', 'xml'}
     MIN_PLAYERS = 1
-    MAX_PLAYERS = 100
+    MAX_PLAYERS = 64  # 128 unique MIDI pitches / 2 (minimum bells per player)
     
     # Multi-bell configuration
     MAX_BELLS_PER_PLAYER = 8  # Overall practical limit
