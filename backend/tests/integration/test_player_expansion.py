@@ -267,7 +267,7 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     arrangements = result['arrangements']
     assert len(arrangements) > 0
 
-    # Each arrangement should report players == actual assignment key count (including VP)
+    # Each arrangement should report players == actual post-trim assignment key count
     for arr in arrangements:
         assert arr['players'] == expected_player_count, (
             f"Strategy {arr['strategy']}: expected players={expected_player_count}, "
@@ -278,6 +278,15 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     assert result['final_player_count'] == arrangements[0]['players'], (
         f"final_player_count={result['final_player_count']} != "
         f"arrangements[0]['players']={arrangements[0]['players']}"
+    )
+
+    # VP3 was trimmed away: the post-trim assignment has exactly len(players)==2 players,
+    # so no expansion actually survived → expanded must be False and minimum_players None.
+    assert result['expanded'] is False, (
+        f"expected expanded=False (VP3 was trimmed), got {result['expanded']}"
+    )
+    assert result['minimum_players'] is None, (
+        f"expected minimum_players=None (VP3 was trimmed), got {result['minimum_players']}"
     )
 
 

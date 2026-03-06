@@ -59,7 +59,6 @@ class ArrangementGenerator:
             logger.info(f"Expanded to {len(expanded_players)} total players (added {len(expanded_players) - len(players)} virtual players)")
         
         # Generate multiple arrangements with different strategies
-        expanded_player_names = {p['name'] for p in expanded_players}
         arrangements = []
         strategies = [
             ('experienced_first', 'Prioritize melody for experienced players'),
@@ -113,17 +112,17 @@ class ArrangementGenerator:
                 assignment = ConflictResolver.balance_assignments(assignment)
                 assignment = ConflictResolver.optimize_for_experience(assignment, expanded_players)
 
-                # Detect virtual players added by bell_assignment.py swap-gap fallback
-                extra_vp = [name for name in assignment if name not in expanded_player_names]
-                if extra_vp:
-                    players_expanded = True
-                    arrangement_player_count = len(expanded_players) + len(extra_vp)
-                    if minimum_required_players is None or arrangement_player_count > minimum_required_players:
-                        minimum_required_players = arrangement_player_count
-
                 # Trim players with 0 bells and cap players with fewer than 2 bells to at most 1
                 assignment, trimmed_original_count = self._trim_players(assignment, players)
                 arrangement_player_count = len(assignment)
+
+                # Recompute expansion signals based on the post-trim assignment size.
+                # This avoids incorrectly marking the result as expanded when swap-gap
+                # fallback virtual players were added but later trimmed away.
+                if arrangement_player_count > len(players):
+                    players_expanded = True
+                    if minimum_required_players is None or arrangement_player_count > minimum_required_players:
+                        minimum_required_players = arrangement_player_count
 
                 # Validate arrangement (including hand constraints)
                 validation = ArrangementValidator.validate(assignment)
