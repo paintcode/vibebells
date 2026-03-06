@@ -231,13 +231,20 @@ class ArrangementGenerator:
         
         expanded = list(original_players)
         current_count = len(original_players)
-        
-        for i in range(current_count, target_count):
+        existing_names = {p['name'] for p in expanded}
+
+        vp_num = 1
+        for _ in range(target_count - current_count):
+            while f'Virtual Player {vp_num}' in existing_names:
+                vp_num += 1
+            vname = f'Virtual Player {vp_num}'
+            existing_names.add(vname)
             expanded.append({
-                'name': f'Virtual Player {i + 1}',
+                'name': vname,
                 'experience': 'intermediate',
                 'virtual': True
             })
+            vp_num += 1
         
         logger.info(f"Expanded player list from {current_count} to {target_count} (added {target_count - current_count} virtual players)")
         
