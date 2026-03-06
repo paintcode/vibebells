@@ -294,3 +294,39 @@ def test_trim_pairs_two_pairs_from_five_sparse_players():
     bell_counts = sorted(len(trimmed[n]['bells']) for n in sparse_in_trimmed)
     assert bell_counts == [1, 2, 2]  # one unpaired, two paired
     assert count == 2  # two original donors removed
+
+
+def test_trim_virtual_players_are_preferred_donors():
+    """With a mix of original and virtual sparse players, virtual players should
+    be chosen as donors (removed) before original players are ever removed."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],        # adequate — not sparse
+        'Player 2': ['E4'],              # original sparse
+        'Player 3': ['F4'],              # original sparse
+        'Virtual Player 4': ['G4'],      # virtual sparse
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Player 3'),
+        _make_player('Virtual Player 4', virtual=True),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+
+    # All bells preserved
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    # sorted_sparse = [Player 2, Player 3, Virtual Player 4]
+    # Two-pointer: Player 2 (left=0) <- Virtual Player 4 (right=2): VP is the donor
+    #              Player 3 (left=1 == right=1): unpaired, keeps 1 bell
+    assert 'Player 2' in trimmed
+    assert len(trimmed['Player 2']['bells']) == 2     # recipient: absorbed VP4's bell
+    assert 'Player 3' in trimmed
+    assert len(trimmed['Player 3']['bells']) == 1     # unpaired original keeps its bell
+    assert 'Virtual Player 4' not in trimmed          # virtual was the donor, now removed
+    assert count == 0  # no original players removed

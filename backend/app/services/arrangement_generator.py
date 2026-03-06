@@ -260,10 +260,13 @@ class ArrangementGenerator:
         """Remove players with 0 bells and pair up players with exactly 1 bell.
 
         Players with 0 bells are always removed. Players with exactly 1 bell are
-        sorted (original/non-virtual players first) and paired: the recipient in each
-        pair gains the donor's bell (ending up with 2 bells) while the donor is
-        removed (0 bells). If the total number of single-bell players is odd, the
-        last unpaired player keeps their 1 bell. No bells are ever dropped.
+        sorted so original (non-virtual) players appear first. Pairing uses two
+        pointers — the front player (original/recipient) absorbs the bell from the
+        back player (virtual/donor) — so virtual players are preferred donors and
+        original players are preferred recipients. Each recipient ends up with 2
+        bells; each donor is removed (0 bells). If the total number of single-bell
+        players is odd, the middle player is unpaired and keeps their 1 bell. No
+        bells are ever dropped.
 
         Args:
             assignment: Dict mapping player name -> {'bells': [...], ...}
@@ -290,16 +293,22 @@ class ArrangementGenerator:
         trimmed = dict(adequate)
 
         if sparse:
-            # Sort sparse players: original (non-virtual) players are preferred recipients
+            # Sort sparse players: original (non-virtual) players are preferred recipients,
+            # so they appear at the front of the list; virtual players appear at the back.
             sorted_sparse = sorted(sparse.keys(), key=lambda n: (n not in original_names))
 
-            # Pair adjacent players: recipient (even index) absorbs donor's (odd index) bell.
-            # Each recipient ends up with 2 bells; each donor is removed (0 bells).
+            # Pair using two pointers: the front player (original/recipient) absorbs the bell
+            # from the back player (virtual/donor). This ensures virtual players are preferred
+            # donors and are removed first, while original players are kept as recipients.
+            # Each recipient ends up with 2 bells; each donor is omitted → removed (0 bells).
+            # If the count is odd, the middle player is unpaired and keeps its 1 bell.
             # Bells are already unique per-player after ConflictResolver.resolve_duplicates,
             # so no deduplication is required here.
-            for i in range(0, len(sorted_sparse) - 1, 2):
-                recipient_name = sorted_sparse[i]
-                donor_name = sorted_sparse[i + 1]
+            left = 0
+            right = len(sorted_sparse) - 1
+            while left < right:
+                recipient_name = sorted_sparse[left]
+                donor_name = sorted_sparse[right]
                 merged_bells = (
                     list(sparse[recipient_name].get('bells', []))
                     + list(sparse[donor_name].get('bells', []))
@@ -311,11 +320,12 @@ class ArrangementGenerator:
                     'right_hand': merged_bells[1::2],
                 }
                 # donor is intentionally omitted from trimmed → removed with 0 bells
+                left += 1
+                right -= 1
 
-            # Odd number of sparse players: the last one is unpaired and keeps its 1 bell
-            if len(sorted_sparse) % 2 == 1:
-                last_name = sorted_sparse[-1]
-                trimmed[last_name] = sparse[last_name]
+            # Odd number of sparse players: the middle one is unpaired and keeps its 1 bell
+            if left == right:
+                trimmed[sorted_sparse[left]] = sparse[sorted_sparse[left]]
 
         removed = set(assignment.keys()) - set(trimmed.keys())
         trimmed_original_count = len(removed & original_names)
