@@ -39,8 +39,8 @@ def test_trim_removes_players_with_zero_bells():
     assert count == 1  # one original player was removed
 
 
-def test_trim_keeps_at_most_one_sparse_player():
-    """At most 1 player with fewer than 2 bells should be kept."""
+def test_trim_pairs_two_sparse_players():
+    """Two single-bell players should be paired: one gets 2 bells, the other is removed."""
     assignment = _make_assignment({
         'Player 1': ['C4', 'D4'],
         'Player 2': ['E4'],
@@ -55,9 +55,11 @@ def test_trim_keeps_at_most_one_sparse_player():
     trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
 
     assert 'Player 1' in trimmed
-    # Exactly one of the two sparse players remains
-    sparse_remaining = sum(1 for n in ['Player 2', 'Player 3'] if n in trimmed)
-    assert sparse_remaining == 1
+    # Exactly one of the two sparse players remains (with 2 bells)
+    sparse_remaining = [n for n in ['Player 2', 'Player 3'] if n in trimmed]
+    assert len(sparse_remaining) == 1
+    keeper = sparse_remaining[0]
+    assert len(trimmed[keeper]['bells']) == 2
     assert count == 1  # one original player removed
 
 
@@ -191,3 +193,104 @@ def test_trim_reassigns_virtual_sparse_bell_to_original_keeper():
     assert 'Virtual Player 10' not in trimmed
     assert len(trimmed['Player 2']['bells']) == 2
     assert count == 0  # no original players were removed
+
+
+def test_trim_pairs_one_pair_from_three_sparse_players():
+    """Three single-bell players: one pair merges, leaving 1 player with 2 bells,
+    1 removed, and 1 unpaired player still with 1 bell."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Player 3': ['F4'],
+        'Player 4': ['G4'],
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Player 3'),
+        _make_player('Player 4'),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+
+    # All bells preserved
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    # One sparse player has 2 bells (paired), one sparse player has 1 bell (unpaired)
+    sparse_names = ['Player 2', 'Player 3', 'Player 4']
+    sparse_in_trimmed = [n for n in sparse_names if n in trimmed]
+    assert len(sparse_in_trimmed) == 2  # one paired recipient + one unpaired
+
+    bell_counts = sorted(len(trimmed[n]['bells']) for n in sparse_in_trimmed)
+    assert bell_counts == [1, 2]  # one unpaired (1 bell), one paired (2 bells)
+    assert count == 1  # one original sparse player removed (the donor)
+
+
+def test_trim_pairs_two_pairs_from_four_sparse_players():
+    """Four single-bell players form two pairs: 2 recipients with 2 bells each, 2 donors removed."""
+    assignment = _make_assignment({
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Player 3': ['F4'],
+        'Player 4': ['G4'],
+        'Player 5': ['A4'],
+    })
+    original_players = [
+        _make_player('Player 1'),
+        _make_player('Player 2'),
+        _make_player('Player 3'),
+        _make_player('Player 4'),
+        _make_player('Player 5'),
+    ]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+
+    # All bells preserved
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    sparse_names = ['Player 2', 'Player 3', 'Player 4', 'Player 5']
+    sparse_in_trimmed = [n for n in sparse_names if n in trimmed]
+    assert len(sparse_in_trimmed) == 2  # two recipients remain
+
+    for n in sparse_in_trimmed:
+        assert len(trimmed[n]['bells']) == 2  # each recipient has exactly 2 bells
+    assert count == 2  # two original donors removed
+
+
+def test_trim_pairs_two_pairs_from_five_sparse_players():
+    """Five single-bell players: two pairs formed, one unpaired player keeps 1 bell."""
+    bells_map = {
+        'Player 1': ['C4', 'D4'],
+        'Player 2': ['E4'],
+        'Player 3': ['F4'],
+        'Player 4': ['G4'],
+        'Player 5': ['A4'],
+        'Player 6': ['B4'],
+    }
+    assignment = _make_assignment(bells_map)
+    original_players = [_make_player(n) for n in bells_map]
+
+    trimmed, count = ArrangementGenerator._trim_players(assignment, original_players)
+
+    assert 'Player 1' in trimmed
+
+    # All bells preserved
+    original_bells = {b for data in assignment.values() for b in data.get('bells', [])}
+    trimmed_bells = {b for data in trimmed.values() for b in data.get('bells', [])}
+    assert trimmed_bells == original_bells
+
+    sparse_names = ['Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6']
+    sparse_in_trimmed = [n for n in sparse_names if n in trimmed]
+    assert len(sparse_in_trimmed) == 3  # two paired recipients + one unpaired
+
+    bell_counts = sorted(len(trimmed[n]['bells']) for n in sparse_in_trimmed)
+    assert bell_counts == [1, 2, 2]  # one unpaired, two paired
+    assert count == 2  # two original donors removed

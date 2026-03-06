@@ -244,12 +244,17 @@ def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
     # Assignment returned by the patched assign_bells.
     # 'Virtual Player 3' is an extra key not present in expanded_players (Expert, Beginner),
     # simulating the swap-gap fallback in bell_assignment.py.
+    # All three players have exactly 1 bell (sparse). Pairing logic:
+    #   sorted order (originals first): Expert, Beginner, Virtual Player 3
+    #   pair 0: Expert (recipient) absorbs Beginner's bell → Expert has 2 bells, Beginner removed
+    #   odd remainder: Virtual Player 3 keeps its 1 bell
+    # → 2 players remain after trimming.
     patched_assignment = {
         'Expert':           {'bells': ['C4'], 'left_hand': ['C4'], 'right_hand': []},
         'Beginner':         {'bells': ['D4'], 'left_hand': ['D4'], 'right_hand': []},
         'Virtual Player 3': {'bells': ['E4'], 'left_hand': ['E4'], 'right_hand': []},
     }
-    expected_player_count = len(patched_assignment)  # 3
+    expected_player_count = 2  # Expert (paired, 2 bells) + Virtual Player 3 (unpaired, 1 bell)
 
     with app.app_context():
         with patch(
