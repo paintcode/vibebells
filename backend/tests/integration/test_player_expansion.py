@@ -157,30 +157,57 @@ def test_expansion_notification():
 
 def test_virtual_player_numbering_starts_at_one():
     """Virtual players added by _expand_players should be numbered starting at 1,
-    regardless of how many original (non-virtual) players already exist."""
+    regardless of how many original (non-virtual) players already exist.
+    Multiple virtual players must be consecutively numbered 1, 2, 3, ..."""
 
     # 8 original players – the bug caused virtual players to start at 9
     original_players = [
         {'name': f'Player {i}', 'experience': 'beginner'} for i in range(1, 9)
     ]
-    # 8 beginners × 2 = 16 capacity; we need >16 notes to force expansion
-    notes = [f'Note{i}' for i in range(17)]
+    # 8 beginners × 2 = 16 capacity; 24 notes → requires multiple virtual players
+    notes = [f'Note{i}' for i in range(24)]
 
     min_needed = ArrangementGenerator._calculate_minimum_players_needed(notes, original_players)
     expanded = ArrangementGenerator._expand_players(original_players, min_needed)
 
     virtual_players = [p for p in expanded if p.get('virtual')]
-    assert len(virtual_players) > 0, "Expansion should have added at least one virtual player"
+    assert len(virtual_players) >= 2, "Expansion should have added at least two virtual players"
 
-    virtual_names = [p['name'] for p in virtual_players]
-    assert 'Virtual Player 1' in virtual_names, (
-        f"First virtual player should be 'Virtual Player 1', got: {virtual_names}"
+    # Sort by numeric suffix to make comparison deterministic
+    def _vp_index(player):
+        name = player.get('name', '')
+        try:
+            return int(name.rsplit(' ', 1)[-1])
+        except (ValueError, IndexError):
+            return 0
+
+    virtual_players_sorted = sorted(virtual_players, key=_vp_index)
+    virtual_names = [p['name'] for p in virtual_players_sorted]
+    expected_names = [f'Virtual Player {i}' for i in range(1, len(virtual_players_sorted) + 1)]
+
+    assert virtual_names == expected_names, (
+        f"Virtual players should be consecutively numbered starting at 1; "
+        f"expected {expected_names}, got {virtual_names}"
     )
-    # Numbering must be consecutive starting at 1
-    for idx, name in enumerate(virtual_names, start=1):
-        assert name == f'Virtual Player {idx}', (
-            f"Expected 'Virtual Player {idx}' but got '{name}'"
-        )
+
+
+def test_virtual_player_numbering_skips_existing_names():
+    """_expand_players should skip 'Virtual Player N' if that name already exists in the
+    original player list, producing unique consecutive names from 1 onward."""
+
+    # Original list already contains 'Virtual Player 1' (e.g. a re-expansion scenario)
+    original_players = [
+        {'name': 'Virtual Player 1', 'experience': 'intermediate', 'virtual': True},
+    ]
+    # Need 2 more players (target_count=3)
+    expanded = ArrangementGenerator._expand_players(original_players, 3)
+
+    virtual_names = [p['name'] for p in expanded if p.get('virtual')]
+    # 'Virtual Player 1' was already there; new ones must be 2 and 3
+    assert 'Virtual Player 2' in virtual_names
+    assert 'Virtual Player 3' in virtual_names
+    # No duplicates
+    assert len(virtual_names) == len(set(virtual_names))
 
 
 def test_per_arrangement_players_and_final_count_consistency_with_swap_gap_vp():
