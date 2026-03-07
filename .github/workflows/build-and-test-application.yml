@@ -55,16 +55,29 @@ jobs:
         npm run build
         npm run test
     
-    - name: Desktop npm install and build
+    - name: Desktop npm install
       working-directory: ./desktop
       run: |
         npm ci
-        npm run build
-    - name: build desktop app
-      run: .\scripts\build-desktop.bat
-    - name: E2E test desktop app
+    - name: Build desktop app (Windows)
+      if: runner.os == 'Windows'
       working-directory: ./desktop
       run: |
-        npm test:e2e
+        npm run build:win
+    - name: Build desktop app (macOS)
+      if: runner.os == 'macOS'
+      working-directory: ./desktop
+      run: |
+        npm run build:mac
+    - name: Build desktop app (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ./desktop
+      run: |
+        npm run build:linux
+    - name: E2E test desktop app
+      if: runner.os == 'Windows'
+      working-directory: ./desktop
+      run: |
+        npm run test:e2e
     
               
