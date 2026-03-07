@@ -46,14 +46,14 @@ jobs:
       with:
         # Version Spec of the version to use. Examples: 12.x, 10.15.1, >=10.15.0.
         node-version: 24.12.0
-    - name: Frontend: npm install, build and test
+    - name: Frontend npm install, build and test
       working-directory: ./frontend
       run: |
         cd ./frontend
         npm ci
         npm run build
         npm run test
-    - name: Desktop: npm install and build
+    - name: Desktop npm install and build
       working-directory: ./desktop
       run: |
         npm ci
