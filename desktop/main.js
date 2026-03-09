@@ -16,6 +16,7 @@ let pythonProcess = null;
 let frontendServer = null;
 
 const isDev = process.env.NODE_ENV === 'development';
+const isE2E = process.env.E2E_TEST === 'true';
 
 // Configuration constants
 // Backend is hardcoded to port 5000 (see backend/run.py)
@@ -53,13 +54,12 @@ function startBackend() {
     // Capture stderr output for error reporting
     let stderrOutput = '';
     
-    if (isDev) {
-      // Development: Use Python from system
+    if (isDev || isE2E) {
+      // Development / E2E test: Use Python from system
       const backendPath = path.join(__dirname, '..', 'backend');
-      pythonProcess = spawn('python', ['-m', 'flask', 'run'], {
+      pythonProcess = spawn('python', ['run.py'], {
         cwd: backendPath,
-        env: { ...process.env, FLASK_ENV: 'production', FLASK_APP: 'app' }
-        // Removed shell: true for security
+        env: { ...process.env, FLASK_ENV: 'production' }
       });
     } else {
       // Production: Use bundled Python executable
@@ -447,8 +447,8 @@ async function createWindow() {
   }
 
   // Load the app
-  if (isDev) {
-    // Development: Load from Next.js dev server
+  if (isDev && !isE2E) {
+    // Development (non-E2E): Load from Next.js dev server
     // Check if dev server is running first
     try {
       await fetch('http://localhost:3000');

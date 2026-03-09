@@ -12,7 +12,8 @@ const path = require('path');
  * @returns {Promise<{app: ElectronApplication, window: Page}>}
  */
 async function launchElectronApp(options = {}) {
-  const { useBuild = true } = options;
+  // In CI environments, always launch via electron directly (no pre-built .exe required)
+  const { useBuild = !process.env.CI } = options;
   
   let executablePath;
   let args = [];

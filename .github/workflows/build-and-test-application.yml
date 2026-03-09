@@ -1,7 +1,7 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# This workflow installs Python dependencies, runs tests and lints, then builds and E2E-tests the Electron desktop app.
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Build and Test Electron, Node, and Python Application
+name: CI
 
 on:
   push:
@@ -48,36 +48,28 @@ jobs:
       with:
         # Version Spec of the version to use. Examples: 12.x, 10.15.1, >=10.15.0.
         node-version: 24.12.0
-    - name: Frontend npm install, build and test
+    - name: Frontend npm install and test
       working-directory: ./frontend
       run: |
         npm ci
-        npm run build
         npm run test
-    
+    - name: Build frontend for Electron (static export)
+      working-directory: ./frontend
+      env:
+        BUILD_ELECTRON: 'true'
+      run: |
+        npm run build
+    - name: Copy frontend static export to desktop build directory
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path "desktop/build" | Out-Null
+        Copy-Item -Path "frontend/out/*" -Destination "desktop/build" -Recurse -Force
     - name: Desktop npm install
       working-directory: ./desktop
       run: |
         npm ci
-    - name: Build desktop app (Windows)
-      if: runner.os == 'Windows'
-      working-directory: ./desktop
-      run: |
-        npm run build:win
-    - name: Build desktop app (macOS)
-      if: runner.os == 'macOS'
-      working-directory: ./desktop
-      run: |
-        npm run build:mac
-    - name: Build desktop app (Linux)
-      if: runner.os == 'Linux'
-      working-directory: ./desktop
-      run: |
-        npm run build:linux
     - name: E2E test desktop app
       if: runner.os == 'Windows'
       working-directory: ./desktop
       run: |
         npm run test:e2e
-    
-              
