@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -64,21 +64,38 @@ jobs:
         BUILD_ELECTRON: 'true'
       run: |
         npm run build
-    - name: Copy frontend static export to desktop build directory
+    - name: Copy frontend static export to desktop build directory (Windows)
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path "desktop/build" | Out-Null
         Copy-Item -Path "frontend/out/*" -Destination "desktop/build" -Recurse -Force
+    - name: Copy frontend static export to desktop build directory (Linux/macOS)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p desktop/build
+        cp -r frontend/out/. desktop/build/
     - name: Desktop npm install
       working-directory: ./desktop
       run: |
         npm ci
-    - name: Pack desktop app with Electron Builder
+    - name: Pack desktop app with Electron Builder (Windows)
+      if: runner.os == 'Windows'
       working-directory: ./desktop
       run: |
         npm run pack
-    - name: E2E test desktop app
+    - name: Build desktop app with Electron Builder (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ./desktop
+      run: |
+        npm run build:linux
+    - name: E2E test desktop app (Windows)
       if: runner.os == 'Windows'
       working-directory: ./desktop
       run: |
         npm run test:e2e
+    - name: E2E test desktop app (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ./desktop
+      run: |
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" npm run test:e2e
