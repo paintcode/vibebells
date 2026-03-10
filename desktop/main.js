@@ -53,13 +53,12 @@ function startBackend() {
     // Capture stderr output for error reporting
     let stderrOutput = '';
     
-    if (isDev) {
-      // Development: Use Python from system
+    if (!app.isPackaged) {
+      // Unpackaged (dev or direct electron launch): Use Python from system
       const backendPath = path.join(__dirname, '..', 'backend');
-      pythonProcess = spawn('python', ['-m', 'flask', 'run'], {
+      pythonProcess = spawn('python', ['run.py'], {
         cwd: backendPath,
-        env: { ...process.env, FLASK_ENV: 'production', FLASK_APP: 'app' }
-        // Removed shell: true for security
+        env: { ...process.env, FLASK_ENV: 'production' }
       });
     } else {
       // Production: Use bundled Python executable
@@ -448,7 +447,7 @@ async function createWindow() {
 
   // Load the app
   if (isDev) {
-    // Development: Load from Next.js dev server
+    // Development mode: Load from Next.js dev server
     // Check if dev server is running first
     try {
       await fetch('http://localhost:3000');
