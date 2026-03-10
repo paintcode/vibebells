@@ -79,10 +79,16 @@ jobs:
       working-directory: ./desktop
       run: |
         npm ci
-    - name: Pack desktop app with Electron Builder
+    - name: Pack desktop app with Electron Builder (Windows)
+      if: runner.os == 'Windows'
       working-directory: ./desktop
       run: |
         npm run pack
+    - name: Build desktop app with Electron Builder (Linux)
+      if: runner.os == 'Linux'
+      working-directory: ./desktop
+      run: |
+        npm run build:linux
     - name: E2E test desktop app (Windows)
       if: runner.os == 'Windows'
       working-directory: ./desktop
