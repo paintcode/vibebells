@@ -19,7 +19,14 @@ async function launchElectronApp(options = {}) {
   
   if (useBuild) {
     // Use built executable for production-like testing
-    const builtExePath = path.join(__dirname, '..', '..', 'dist', 'win-unpacked', 'Vibebells.exe');
+    let builtExePath;
+    if (process.platform === 'win32') {
+      builtExePath = path.join(__dirname, '..', '..', 'dist', 'win-unpacked', 'Vibebells.exe');
+    } else if (process.platform === 'darwin') {
+      builtExePath = path.join(__dirname, '..', '..', 'dist', 'mac', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells');
+    } else {
+      builtExePath = path.join(__dirname, '..', '..', 'dist', 'linux-unpacked', 'vibebells');
+    }
     const fs = require('fs');
     if (!fs.existsSync(builtExePath)) {
       throw new Error(`Built executable not found at ${builtExePath}. Run 'npm run build:desktop' first.`);
