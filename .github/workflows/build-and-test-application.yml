@@ -1,0 +1,84 @@
+# This workflow installs Python dependencies, runs tests and lints, then builds and E2E-tests the Electron desktop app.
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v6.2.0
+      with:
+        python-version: "3.13"
+    - name: Install python dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        pip install -r requirements.txt
+    - name: Lint python with flake8
+      working-directory: ./backend
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Test backend with pytest
+      working-directory: ./backend
+      run: |
+        python -m pytest tests/
+    - name: Build Python backend executable with PyInstaller
+      working-directory: ./backend
+      run: |
+        pip install pyinstaller
+        pyinstaller run.spec
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v6.3.0
+      with:
+        # Version Spec of the version to use. Examples: 12.x, 10.15.1, >=10.15.0.
+        node-version: 24.12.0
+    - name: Frontend npm install and test
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run test
+    - name: Build frontend for Electron (static export)
+      working-directory: ./frontend
+      env:
+        BUILD_ELECTRON: 'true'
+      run: |
+        npm run build
+    - name: Copy frontend static export to desktop build directory
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path "desktop/build" | Out-Null
+        Copy-Item -Path "frontend/out/*" -Destination "desktop/build" -Recurse -Force
+    - name: Desktop npm install
+      working-directory: ./desktop
+      run: |
+        npm ci
+    - name: Pack desktop app with Electron Builder
+      working-directory: ./desktop
+      run: |
+        npm run pack
+    - name: E2E test desktop app
+      if: runner.os == 'Windows'
+      working-directory: ./desktop
+      run: |
+        npm run test:e2e
