@@ -19,10 +19,26 @@ async function launchElectronApp(options = {}) {
   
   if (useBuild) {
     // Use built executable for production-like testing
-    const builtExePath = path.join(__dirname, '..', '..', 'dist', 'win-unpacked', 'Vibebells.exe');
     const fs = require('fs');
+    const distDir = path.join(__dirname, '..', '..', 'dist');
+
+    let builtExePath;
+    if (process.platform === 'win32') {
+      builtExePath = path.join(distDir, 'win-unpacked', 'Vibebells.exe');
+    } else if (process.platform === 'darwin') {
+      // electron-builder --dir output directory varies by architecture on macOS
+      const macosCandidates = [
+        path.join(distDir, 'mac', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells'),
+        path.join(distDir, 'mac-arm64', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells'),
+        path.join(distDir, 'mac-universal', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells'),
+      ];
+      builtExePath = macosCandidates.find(p => fs.existsSync(p)) || macosCandidates[0];
+    } else {
+      builtExePath = path.join(distDir, 'linux-unpacked', 'vibebells');
+    }
+
     if (!fs.existsSync(builtExePath)) {
-      throw new Error(`Built executable not found at ${builtExePath}. Run 'npm run build:desktop' first.`);
+      throw new Error(`Built executable not found at ${builtExePath}. Run 'npm run pack' (or 'npm run build:win' / 'npm run build:mac') first.`);
     }
     executablePath = builtExePath;
   } else {
@@ -239,11 +255,19 @@ async function cleanupElectronApp(app) {
   // Give processes time to clean up
   await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // Force kill any remaining backend processes on Windows
+  // Force kill any remaining backend processes
   if (process.platform === 'win32') {
     try {
       const { execSync } = require('child_process');
       execSync('taskkill /F /IM vibebells-backend.exe /T 2>nul', { stdio: 'ignore' });
+      console.log('Cleaned up any remaining backend processes');
+    } catch (error) {
+      // Process may not exist, ignore error
+    }
+  } else if (process.platform === 'darwin') {
+    try {
+      const { execSync } = require('child_process');
+      execSync('pkill -f vibebells-backend', { stdio: 'ignore' });
       console.log('Cleaned up any remaining backend processes');
     } catch (error) {
       // Process may not exist, ignore error
