@@ -43,6 +43,11 @@ jobs:
       working-directory: ./backend
       run: |
         python -m pytest tests/
+    - name: Build Python backend executable with PyInstaller
+      working-directory: ./backend
+      run: |
+        pip install pyinstaller
+        pyinstaller run.spec
     - name: Setup Node.js environment
       uses: actions/setup-node@v6.3.0
       with:
@@ -68,6 +73,10 @@ jobs:
       working-directory: ./desktop
       run: |
         npm ci
+    - name: Pack desktop app with Electron Builder
+      working-directory: ./desktop
+      run: |
+        npm run pack
     - name: E2E test desktop app
       if: runner.os == 'Windows'
       working-directory: ./desktop
