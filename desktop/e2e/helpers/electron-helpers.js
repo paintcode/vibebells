@@ -32,7 +32,12 @@ async function launchElectronApp(options = {}) {
         path.join(distDir, 'mac-arm64', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells'),
         path.join(distDir, 'mac-universal', 'Vibebells.app', 'Contents', 'MacOS', 'Vibebells'),
       ];
-      builtExePath = macosCandidates.find(p => fs.existsSync(p)) || macosCandidates[0];
+      builtExePath = macosCandidates.find(p => fs.existsSync(p));
+      if (!builtExePath) {
+        throw new Error(
+          `Built macOS executable not found. Checked:\n${macosCandidates.join('\n')}\nRun 'npm run pack' (or 'npm run build:mac') first.`
+        );
+      }
     } else {
       builtExePath = path.join(distDir, 'linux-unpacked', 'vibebells');
     }
@@ -267,7 +272,7 @@ async function cleanupElectronApp(app) {
   } else if (process.platform === 'darwin') {
     try {
       const { execSync } = require('child_process');
-      execSync('pkill -f vibebells-backend', { stdio: 'ignore' });
+      execSync('pkill -x vibebells-backend', { stdio: 'ignore' });
       console.log('Cleaned up any remaining backend processes');
     } catch (error) {
       // Process may not exist, ignore error
