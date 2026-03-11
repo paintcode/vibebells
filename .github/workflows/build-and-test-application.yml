@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -64,11 +64,17 @@ jobs:
         BUILD_ELECTRON: 'true'
       run: |
         npm run build
-    - name: Copy frontend static export to desktop build directory
+    - name: Copy frontend static export to desktop build directory (Windows)
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
         New-Item -ItemType Directory -Force -Path "desktop/build" | Out-Null
         Copy-Item -Path "frontend/out/*" -Destination "desktop/build" -Recurse -Force
+    - name: Copy frontend static export to desktop build directory (macOS/Linux)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p desktop/build
+        cp -r frontend/out/. desktop/build/
     - name: Desktop npm install
       working-directory: ./desktop
       run: |
@@ -78,7 +84,7 @@ jobs:
       run: |
         npm run pack
     - name: E2E test desktop app
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' || runner.os == 'macOS'
       working-directory: ./desktop
       run: |
         npm run test:e2e
